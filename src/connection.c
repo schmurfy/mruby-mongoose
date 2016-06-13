@@ -60,8 +60,6 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
       
       // instantiate ruby connection class (called with both UDP and TCP),
       // for UDP this event is sent on the first packet received
-      printf("accepted connection: %#x\n", (unsigned int)nc);
-      
       instantiate_connection(st->mrb, nc);
     }
     break;
@@ -69,7 +67,6 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
   case MG_EV_CLOSE:
     {
       st = (connection_state *)nc->user_data;
-      printf("connection closed: %#x\n", (unsigned int)nc);
       mrb_funcall(st->mrb, st->m_handler, "closed", 0);
       
     }
@@ -81,7 +78,6 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
       mrb_value data;
       
       st = (connection_state *) nc->user_data;
-      printf("data received: %#x\n", (unsigned int)nc);
       
       ai = mrb_gc_arena_save(st->mrb);
       data = mrb_str_new(st->mrb, io->buf, io->len);
@@ -111,7 +107,6 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
 
 static mrb_value _local_address(mrb_state *mrb, mrb_value self)
 {
-  mrb_value m_str;
   char buffer[100];
   connection_state *st = (connection_state *) DATA_PTR(self);
   
@@ -124,7 +119,6 @@ static mrb_value _local_address(mrb_state *mrb, mrb_value self)
 
 static mrb_value _remote_address(mrb_state *mrb, mrb_value self)
 {
-  mrb_value m_str;
   char buffer[100];
   connection_state *st = (connection_state *) DATA_PTR(self);
   

@@ -64,9 +64,6 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
     goto error;
   }
   
-  
-  printf("bound successfully: %#x !\n", nc);
-  
   // we have our socket, create the associated ruby object and save the module on it if any
   m_connection = create_connection(mrb, nc, m_module);
   
