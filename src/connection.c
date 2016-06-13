@@ -95,6 +95,13 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
     }
     break;
   
+  case MG_EV_TIMER:
+    {
+      st = (connection_state *)nc->user_data;
+      mrb_funcall(st->mrb, st->m_handler, "timer", 0);
+    }
+    break;
+  
   case MG_EV_POLL:
     // ignore
     break;
@@ -157,6 +164,16 @@ static mrb_value _close(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+static mrb_value _set_timer(mrb_state *mrb, mrb_value self)
+{
+  mrb_int m_delay;
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  
+  mrb_get_args(mrb, "i", &m_delay);
+  mg_set_timer(st->conn, mg_time() + (m_delay / 1000.0) );
+  return mrb_nil_value();
+}
+
 ////////////////////
 // public
 ///////////////////
@@ -196,6 +213,7 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, connection_class, "send_data", _send_data, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, connection_class, "local_address", _local_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "set_timer", _set_timer, MRB_ARGS_REQ(1));
   
   mrb_define_method(mrb, connection_class, "close_after_send", _close_after_send, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "close", _close, MRB_ARGS_NONE());
