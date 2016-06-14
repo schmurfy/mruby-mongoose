@@ -101,8 +101,11 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
   case MG_EV_POLL:
     // ignore
     break;
-    
+  
+  default:
+    handle_http_events(nc, ev, p);
   }
+  
 }
 
 static mrb_value _local_address(mrb_state *mrb, mrb_value self)
@@ -211,4 +214,6 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   
   mrb_define_method(mrb, connection_class, "close_after_send", _close_after_send, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "close", _close, MRB_ARGS_NONE());
+  
+  register_http_protocol(mrb, connection_class, mod);
 }
