@@ -42,7 +42,9 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
     
     nc->user_data = (void *)st;
     
-    mrb_funcall(st->mrb, st->m_handler, "accepted", 0);
+    if( MRB_RESPOND_TO(st->mrb, st->m_handler, "accepted") ){
+      mrb_funcall(st->mrb, st->m_handler, "accepted", 0);
+    }
   }
   
   return 0;
@@ -67,34 +69,40 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
   case MG_EV_CLOSE:
     {
       st = (connection_state *)nc->user_data;
-      mrb_funcall(st->mrb, st->m_handler, "closed", 0);
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
+        mrb_funcall(st->mrb, st->m_handler, "closed", 0);
+      }
       
     }
     break;
   
   case MG_EV_RECV:
     {
-      struct mbuf *io = &nc->recv_mbuf;
-      mrb_value data;
-      
       st = (connection_state *) nc->user_data;
       
-      ai = mrb_gc_arena_save(st->mrb);
-      data = mrb_str_new(st->mrb, io->buf, io->len);
-      
-      // remove data from buffer
-      mbuf_remove(io, io->len);
-      
-      // mrb_full_gc(st->mrb);
-      mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
-      mrb_gc_arena_restore(st->mrb, ai);
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "data_received") ){
+        mrb_value data;
+        struct mbuf *io = &nc->recv_mbuf;
+        ai = mrb_gc_arena_save(st->mrb);
+        data = mrb_str_new(st->mrb, io->buf, io->len);
+        
+        // remove data from buffer
+        mbuf_remove(io, io->len);
+        
+        // mrb_full_gc(st->mrb);
+        mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
+        mrb_gc_arena_restore(st->mrb, ai);
+      }
+    
     }
     break;
   
   case MG_EV_TIMER:
     {
       st = (connection_state *)nc->user_data;
-      mrb_funcall(st->mrb, st->m_handler, "timer", 0);
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "timer") ){
+        mrb_funcall(st->mrb, st->m_handler, "timer", 0);
+      }
     }
     break;
   
