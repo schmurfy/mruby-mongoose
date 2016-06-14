@@ -50,7 +50,7 @@ static mrb_value _poll(mrb_state *mrb, mrb_value self)
 static mrb_value _bind(mrb_state *mrb, mrb_value self)
 {
   char *addr;
-  mrb_value m_module = mrb_nil_value(), m_connection;
+  mrb_value m_module = mrb_nil_value();
   struct mg_connection *nc;
   struct manager_state *st = (struct manager_state *) DATA_PTR(self);
   
@@ -65,7 +65,7 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
   }
   
   // we have our socket, create the associated ruby object and save the module on it if any
-  m_connection = create_connection(mrb, nc, m_module);
+  return create_connection(mrb, nc, m_module);
   
 error:
   return mrb_true_value();
