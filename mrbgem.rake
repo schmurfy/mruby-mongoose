@@ -7,10 +7,14 @@ MRuby::Gem::Specification.new('mruby-mongoose') do |spec|
   spec.author  = 'Julien Ammous'
   spec.summary = 'Mongoose bindings (HTTP, WebSocket, DNS Client + Server, MQTT Client + Server, CoAP)'
   
-  # spec.objs << File.expand_path('../mongoose/mongoose.o', __FILE__)
+  srcs =
+    Dir.glob("#{dir}/mongoose/*.c") +
+    Dir.glob("#{dir}/src/**/*.c") +
+    Dir.glob("#{dir}/src/*.c")
   
   dir = File.dirname(__FILE__)
-  spec.objs += Dir.glob("#{dir}/mongoose/*.c").map do |f|
+  
+  spec.objs += srcs.map do |f|
     objfile(f.relative_path_from(@dir).to_s.pathmap("#{build_dir}/%X"))
   end
   
