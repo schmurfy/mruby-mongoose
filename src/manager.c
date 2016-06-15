@@ -68,7 +68,7 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
   return create_connection(mrb, nc, m_module);
   
 error:
-  return mrb_true_value();
+  return mrb_nil_value();
 }
 
 // def self.run(timeout = 10000, &block)
