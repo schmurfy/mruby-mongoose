@@ -47,6 +47,30 @@ static mrb_value _poll(mrb_state *mrb, mrb_value self)
 }
 
 
+static mrb_value _connect(mrb_state *mrb, mrb_value self)
+{
+  char *addr;
+  mrb_value m_module = mrb_nil_value();
+  struct mg_connection *nc;
+  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  
+  if( mrb_get_args(mrb, "z|C", &addr, &m_module) == 2 ){
+    // a module was provided, check it
+    mrb_check_type(mrb, m_module, MRB_TT_MODULE);
+  }
+  
+  if( (nc = mg_connect(&st->mgr, addr, _client_ev_handler)) == NULL ){
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "failed to connect to %S", mrb_str_new_cstr(mrb, addr) );
+    goto error;
+  }
+  
+  return create_client_connection(mrb, nc, m_module);
+  
+error:
+  return mrb_nil_value();
+}
+
+
 static mrb_value _bind(mrb_state *mrb, mrb_value self)
 {
   char *addr;
@@ -59,7 +83,7 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
     mrb_check_type(mrb, m_module, MRB_TT_MODULE);
   }
   
-  if( (nc = mg_bind(&st->mgr, addr, ev_handler)) == NULL ){
+  if( (nc = mg_bind(&st->mgr, addr, _server_ev_handler)) == NULL ){
     mrb_raisef(mrb, E_ARGUMENT_ERROR, "failed to bind on %S", mrb_str_new_cstr(mrb, addr) );
     goto error;
   }
@@ -104,5 +128,8 @@ void gem_init_manager_class(mrb_state *mrb, struct RClass *mod)
   
   mrb_define_method(mrb, manager_class, "initialize", _initialize, MRB_ARGS_NONE());
   mrb_define_method(mrb, manager_class, "bind", _bind, MRB_ARGS_ARG(1, 1));
+  mrb_define_method(mrb, manager_class, "connect", _connect, MRB_ARGS_ARG(1, 1));
+  
+  
   mrb_define_method(mrb, manager_class, "poll", _poll, MRB_ARGS_REQ(1));
 }

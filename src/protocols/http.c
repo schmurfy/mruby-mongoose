@@ -3,6 +3,7 @@
 #include "../connection.h"
 
 static struct RClass *http_message_class;
+static struct RClass *http_mixin;
 
 ////////////////////
 // HTTPMessage class
@@ -58,29 +59,9 @@ static mrb_value _headers(mrb_state *mrb, mrb_value self)
 
 
 
-////////////////////
-// Connection class
-///////////////////
-
-
-void handle_http_events(struct mg_connection *nc, int ev, void *p)
-{
-  struct http_message *req = (struct http_message *)p;
-  connection_state *st = (connection_state *)nc->user_data;
-  
-  switch(ev){
-  case MG_EV_HTTP_REQUEST:
-    {
-      mrb_value m_req = mrb_obj_value(
-          mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
-        );
-      
-      mrb_funcall(st->mrb, st->m_handler, "http_request", 1, m_req);
-    }
-    break;
-  }
-  
-}
+////////////////////////////////
+// Connection class (private)
+////////////////////////////////
 
 
 static mrb_value _serve_http(mrb_state *mrb, mrb_value self)
@@ -106,6 +87,10 @@ static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
 {
   connection_state *st = (connection_state *) DATA_PTR(self);
   mg_set_protocol_http_websocket(st->conn);
+  st->protocol = PROTO_TYPE_HTTP;
+  
+  mrb_include_module(mrb, st->m_class, http_mixin);
+  
   return self;
 }
 
@@ -115,8 +100,38 @@ static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
 // public
 ///////////////////
 
+uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
+{
+  uint8_t handled = 0;
+  struct http_message *req = (struct http_message *)p;
+  connection_state *st = (connection_state *)nc->user_data;
+  
+  // skip if this is not an http connection
+  if( st->protocol != PROTO_TYPE_HTTP ){
+    return 0;
+  }
+  
+  switch(ev){
+  case MG_EV_HTTP_REQUEST:
+    {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "http_request") ){
+        mrb_value m_req = mrb_obj_value(
+            mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
+          );
+        
+        mrb_funcall(st->mrb, st->m_handler, "http_request", 1, m_req);
+        handled = 1;
+      }
+    }
+    break;
+  }
+  
+  return handled;
+}
+
 void register_http_protocol(mrb_state *mrb, struct RClass *connection_class, struct RClass *mod)
 {
+  http_mixin = mrb_define_module_under(mrb, mod, "HTTConnectionMixin");
   http_message_class = mrb_define_class_under(mrb, mod, "HTTPMessage", NULL);
   MRB_SET_INSTANCE_TT(http_message_class, MRB_TT_DATA);
   

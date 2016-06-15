@@ -10,6 +10,16 @@ static struct RClass *connection_class;
 static void _free_state(mrb_state *mrb, void *ptr)
 {
   if( ptr != NULL ){
+    connection_state *st = (connection_state *) ptr;
+    
+    if( st->auth.user != NULL ){
+      mrb_free(mrb, st->auth.user);
+    }
+    
+    if( st->auth.pass != NULL ){
+      mrb_free(mrb, st->auth.pass);
+    }
+    
     mrb_free(mrb, ptr);
   }
 }
@@ -21,6 +31,19 @@ static const mrb_data_type mrb_connection_type = { "$mongoose_connection", _free
 ////////////////////
 // internals
 ///////////////////
+
+static struct RClass *create_connection_class(mrb_state *mrb, mrb_value m_module)
+{
+  struct RClass *class;
+  
+  // create an anonymous class
+  class = mrb_class_new(mrb, connection_class);
+  
+  // mix our module in
+  mrb_include_module(mrb, class, mrb_class_ptr(m_module));
+  
+  return class;
+}
 
 // instantiate new connection object when connection is accepted
 static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
@@ -37,7 +60,7 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
     st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, listener_st->m_class, (void*)st, &mrb_connection_type) );
     mrb_gc_register(mrb, st->m_handler);
     
-    st->mrb = listener_st->mrb;
+    st->mrb = mrb;
     st->conn = nc;
     
     nc->user_data = (void *)st;
@@ -50,9 +73,58 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
   return 0;
 }
 
-void ev_handler(struct mg_connection *nc, int ev, void *p)
+// return true if the event was handled
+static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
+{
+  uint8_t handled = 0;
+  connection_state *st;
+  
+  switch(ev){
+  case MG_EV_TIMER:
+    {
+      st = (connection_state *)nc->user_data;
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "timer") ){
+        mrb_funcall(st->mrb, st->m_handler, "timer", 0);
+        handled = 1;
+      }
+    }
+    
+    break;
+  }
+  
+  return handled;
+}
+
+void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
+{
+  uint8_t handled = 0;
+  // connection_state *st;
+  
+  switch(ev){
+  case MG_EV_CONNECT: {
+      // struct RCLass *base_class;
+      // st = (connection_state *)nc->user_data;
+      // 
+      // base_class = create_connection_class(mrb, st->m_module);
+      // 
+      // // instantiate ruby connection class (called with both UDP and TCP),
+      // // for UDP this event is sent on the first packet received
+      // instantiate_connection(st->mrb, nc);
+    }
+    break;
+  }
+  
+  // pass the event along if not handled
+  (handled ||
+    handle_mqtt_events(nc, ev, p)
+  );
+}
+
+
+void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   int ai;
+  uint8_t handled = 0;
   connection_state *st;
   
   switch(ev){
@@ -71,6 +143,7 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
       st = (connection_state *)nc->user_data;
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
         mrb_funcall(st->mrb, st->m_handler, "closed", 0);
+        handled = 1;
       }
       
     }
@@ -92,28 +165,18 @@ void ev_handler(struct mg_connection *nc, int ev, void *p)
         // mrb_full_gc(st->mrb);
         mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
         mrb_gc_arena_restore(st->mrb, ai);
+        handled = 1;
       }
     
     }
     break;
-  
-  case MG_EV_TIMER:
-    {
-      st = (connection_state *)nc->user_data;
-      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "timer") ){
-        mrb_funcall(st->mrb, st->m_handler, "timer", 0);
-      }
-    }
-    break;
-  
-  case MG_EV_POLL:
-    // ignore
-    break;
-  
-  default:
-    handle_http_events(nc, ev, p);
   }
   
+  // pass the event along if not handled
+  (handled ||
+    shared_handler(nc, ev, p) ||
+    handle_http_events(nc, ev, p)
+  );
 }
 
 static mrb_value _local_address(mrb_state *mrb, mrb_value self)
@@ -179,9 +242,52 @@ static mrb_value _set_timer(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+static mrb_value _authenticate_with(mrb_state *mrb, mrb_value self)
+{
+  char *user, *pass, *type = NULL;
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  
+  mrb_get_args(mrb, "zz|z", &user, &pass, &type);
+  
+  st->auth.user = mrb_malloc(mrb,  strlen(user) + 1 );
+  strncpy(st->auth.user, user, strlen(user) + 1);
+  
+  st->auth.pass = mrb_malloc(mrb,  strlen(pass) + 1 );
+  strncpy(st->auth.pass, pass, strlen(pass) + 1);
+  
+  if( type ){
+    st->auth.type = mrb_malloc(mrb,  strlen(type) + 1 );
+    strncpy(st->auth.type, type, strlen(type) + 1);
+  }
+  
+  return self;
+}
+
+
 ////////////////////
 // public
 ///////////////////
+
+mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module)
+{
+  connection_state *st;
+  
+  
+  st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
+  st->mrb = mrb;
+  st->conn = nc;
+  
+  // create an anonymous class
+  st->m_class = create_connection_class(mrb, m_module);
+  st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, st->m_class, (void *)st, &mrb_connection_type) );
+  mrb_gc_register(mrb, st->m_handler);
+  
+  // and associate it with the mongoose connection
+  nc->user_data = (void *) st;
+  
+  return st->m_handler;
+}
+
 
 mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module)
 {
@@ -194,10 +300,7 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   st->conn = nc;
   
   // create an anonymous class
-  st->m_class = mrb_class_new(mrb, connection_class);
-  
-  // mix our module in
-  mrb_include_module(mrb, st->m_class, mrb_class_ptr(m_module));
+  st->m_class = create_connection_class(mrb, m_module);
   
   ret = mrb_obj_value( mrb_data_object_alloc(mrb, connection_class, (void *)st, &mrb_connection_type) );
   
@@ -220,8 +323,11 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "set_timer", _set_timer, MRB_ARGS_REQ(1));
   
+  mrb_define_method(mrb, connection_class, "authenticate_with", _authenticate_with, MRB_ARGS_REQ(2) | MRB_ARGS_OPT(1));
+  
   mrb_define_method(mrb, connection_class, "close_after_send", _close_after_send, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "close", _close, MRB_ARGS_NONE());
   
   register_http_protocol(mrb, connection_class, mod);
+  register_mqtt_protocol(mrb, connection_class, mod);
 }
