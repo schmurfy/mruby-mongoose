@@ -5,6 +5,7 @@
 #include "mruby/data.h"
 #include "mruby/class.h"
 #include "mruby/hash.h"
+#include "mruby/array.h"
 
 #include "mongoose.h"
 

@@ -24,12 +24,55 @@ static mrb_value _set_protocol_mqtt(mrb_state *mrb, mrb_value self)
 // Connection class (private)
 ////////////////////////////////
 
+static inline void ensure_hash_is_empty(mrb_state *mrb, mrb_value m_hash)
+{
+  // if there are keys left, raise an error
+  if( !mrb_bool(mrb_hash_empty_p(mrb, m_hash)) ){
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "unknown keys: %S",
+        mrb_ary_join(mrb, mrb_hash_keys(mrb, m_hash), mrb_str_new_cstr(mrb, ", "))
+      );
+  }
 
-#define GET_INT_OPT(MRB, OPTS, NAME, VAR) m_val = mrb_hash_fetch(MRB, OPTS, mrb_symbol_value(mrb_intern_cstr(MRB, NAME)), mrb_nil_value()); \
-if( !mrb_nil_p(m_val) ){ \
-  VAR = mrb_fixnum(m_val); \
 }
 
+static mrb_value _subscribe(mrb_state *mrb, mrb_value self)
+{
+  // int flags = 0;
+  mrb_int id = 0;
+  // char *topic;
+  mrb_value m_opts = mrb_nil_value();
+  struct mg_mqtt_topic_expression topic_expression;
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  int ai = mrb_gc_arena_save(mrb);
+  
+  mrb_get_args(mrb, "z|H", &topic_expression.topic, &m_opts);
+  
+  if( !mrb_nil_p(m_opts) ){
+    mrb_value m_val;
+    
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "id")));
+    if( !mrb_nil_p(m_val) ){
+      id = mrb_fixnum(m_val);
+    }
+    
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "qos")));
+    if( !mrb_nil_p(m_val) ){
+      topic_expression.qos = mrb_fixnum(m_val);
+    }
+    
+    // m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "dup")));
+    // if( !mrb_nil_p(m_val) && mrb_bool(m_val) ){
+    //   flags |= MG_MQTT_DUP;
+    // }
+    
+    ensure_hash_is_empty(mrb, m_opts);
+  }
+  
+  mg_mqtt_subscribe(st->conn, &topic_expression, 1, id);
+  
+  mrb_gc_arena_restore(mrb, ai);
+  return self;
+}
 
 // def publish(topic, data, id: 42, retain: true, dup: true)
 static mrb_value _publish(mrb_state *mrb, mrb_value self)
@@ -45,29 +88,34 @@ static mrb_value _publish(mrb_state *mrb, mrb_value self)
   
   if( !mrb_nil_p(m_opts) ){
     mrb_value m_val;
-    mrb_int qos = 0;
     
-    GET_INT_OPT(mrb, m_opts, "id", id);
-    GET_INT_OPT(mrb, m_opts, "qos", qos);
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "id")));
+    if( !mrb_nil_p(m_val) ){
+      id = mrb_fixnum(m_val);
+    }
     
-    flags |= MG_MQTT_QOS(qos);
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "qos")));
+    if( !mrb_nil_p(m_val) ){
+      flags |= MG_MQTT_QOS( mrb_fixnum(m_val) );
+    }
     
-    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "retain")), mrb_nil_value());
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "retain")));
     if( !mrb_nil_p(m_val) && mrb_bool(m_val) ){
       flags |= MG_MQTT_RETAIN;
     }
     
-    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "dup")), mrb_nil_value());
+    m_val = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "dup")));
     if( !mrb_nil_p(m_val) && mrb_bool(m_val) ){
       flags |= MG_MQTT_DUP;
     }
     
+    ensure_hash_is_empty(mrb, m_opts);
   }
   
   mg_mqtt_publish(st->conn, topic, (uint16_t)id, flags, data, strlen(data));
   
   mrb_gc_arena_restore(mrb, ai);
-  return mrb_nil_value();
+  return self;
 }
 
 ////////////////////
@@ -93,7 +141,7 @@ uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
       opts.password   = st->auth.pass;
       
       // TODO: client_id should be configurable, keep_alive too
-      mg_send_mqtt_handshake_opt(nc, "dummy", opts);
+      mg_send_mqtt_handshake_opt(nc, "mongoose", opts);
     }
     break;
   
@@ -107,6 +155,14 @@ uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
         CALL_IF_EXIST(st->mrb, st->m_handler, "connection_failed", 1, mrb_fixnum_value(msg->connack_ret_code));
       }
       
+    }
+    break;
+  
+  case MG_EV_MQTT_PUBLISH: {
+      CALL_IF_EXIST(st->mrb, st->m_handler, "published", 2,
+          mrb_str_new_cstr(st->mrb, msg->topic),
+          mrb_str_new(st->mrb, msg->payload.p, msg->payload.len)
+        );
     }
     break;
   
@@ -125,6 +181,7 @@ void register_mqtt_protocol(mrb_state *mrb, struct RClass *connection_class, str
   mqtt_mixin = mrb_define_module_under(mrb, mod, "MQTTConnectionMixin");
   
   mrb_define_method(mrb, mqtt_mixin, "publish", _publish, MRB_ARGS_REQ(2) | MRB_ARGS_OPT(1));
+  mrb_define_method(mrb, mqtt_mixin, "subscribe", _subscribe, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
   
   mrb_define_method(mrb, connection_class, "set_protocol_mqtt", _set_protocol_mqtt, MRB_ARGS_NONE());
 }

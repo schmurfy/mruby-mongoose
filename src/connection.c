@@ -98,12 +98,12 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
-  // connection_state *st;
+  connection_state *st = (connection_state *)nc->user_data;;
+  int ai = mrb_gc_arena_save(st->mrb);
   
   switch(ev){
   case MG_EV_CONNECT: {
       // struct RCLass *base_class;
-      // st = (connection_state *)nc->user_data;
       // 
       // base_class = create_connection_class(mrb, st->m_module);
       // 
@@ -118,6 +118,8 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
   (handled ||
     handle_mqtt_events(nc, ev, p)
   );
+  
+  mrb_gc_arena_restore(st->mrb, ai);
 }
 
 
