@@ -150,9 +150,8 @@ void register_http_protocol(mrb_state *mrb, struct RClass *connection_class, str
   mrb_define_method(mrb, http_message_class, "resp_status_msg", _resp_status_msg, MRB_ARGS_NONE());
   mrb_define_method(mrb, http_message_class, "resp_code", _resp_code, MRB_ARGS_NONE());
   
+  mrb_define_method(mrb, http_mixin, "serve_http", _serve_http, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
   
   
-  
-  mrb_define_method(mrb, connection_class, "serve_http", _serve_http, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
   mrb_define_method(mrb, connection_class, "set_protocol_http_websocket", _set_protocol_http_websocket, MRB_ARGS_NONE());
 }
