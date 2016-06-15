@@ -71,12 +71,21 @@ error:
   return mrb_true_value();
 }
 
+// def self.run(timeout = 10000, &block)
 static mrb_value _run(mrb_state *mrb, mrb_value self)
 {
+  mrb_value m_block = mrb_nil_value();
+  mrb_int timeout = 10000;
   struct manager_state *st = (struct manager_state *) DATA_PTR(self);
   
+  mrb_get_args(mrb, "|i&", &timeout, &m_block);
+  
   for(;;) {
-    mg_mgr_poll(&st->mgr, 1000);
+    mg_mgr_poll(&st->mgr, timeout);
+    
+    if( ! mrb_nil_p(m_block) ){
+      mrb_yield(mrb, m_block, self);
+    }
   }
 
   return mrb_nil_value();
@@ -91,7 +100,7 @@ void gem_init_manager_class(mrb_state *mrb, struct RClass *mod)
   struct RClass *manager_class = mrb_define_class_under(mrb, mod, "Manager", NULL);
   MRB_SET_INSTANCE_TT(manager_class, MRB_TT_DATA);
   
-  mrb_define_method(mrb, manager_class, "run", _run, MRB_ARGS_NONE());
+  mrb_define_method(mrb, manager_class, "run", _run, MRB_ARGS_OPT(1) | MRB_ARGS_BLOCK());
   
   mrb_define_method(mrb, manager_class, "initialize", _initialize, MRB_ARGS_NONE());
   mrb_define_method(mrb, manager_class, "bind", _bind, MRB_ARGS_ARG(1, 1));
