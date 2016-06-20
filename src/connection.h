@@ -33,4 +33,8 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p);
 void register_mqtt_protocol(mrb_state *, struct RClass *, struct RClass *);
 uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p);
 
+#define PROTO_TYPE_DNS 3
+void register_dns_protocol(mrb_state *, struct RClass *, struct RClass *);
+uint8_t handle_dns_events(struct mg_connection *nc, int ev, void *p);
+
 #endif

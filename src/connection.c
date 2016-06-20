@@ -119,7 +119,8 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
   
   // pass the event along if not handled
   (handled ||
-    handle_mqtt_events(nc, ev, p)
+    handle_mqtt_events(nc, ev, p) ||
+    handle_dns_events(nc, ev, p)
   );
   
   mrb_gc_arena_restore(st->mrb, ai);
@@ -335,4 +336,5 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   
   register_http_protocol(mrb, connection_class, mod);
   register_mqtt_protocol(mrb, connection_class, mod);
+  register_dns_protocol(mrb, connection_class, mod);
 }
