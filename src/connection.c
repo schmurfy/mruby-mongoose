@@ -62,6 +62,7 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
     
     st->mrb = mrb;
     st->conn = nc;
+    st->protocol = listener_st->protocol;
     
     nc->user_data = (void *)st;
     
