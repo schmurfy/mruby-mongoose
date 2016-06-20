@@ -110,6 +110,9 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
       // // instantiate ruby connection class (called with both UDP and TCP),
       // // for UDP this event is sent on the first packet received
       // instantiate_connection(st->mrb, nc);
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "connected") ){
+        mrb_funcall(st->mrb, st->m_handler, "connected", 0);
+      }
     }
     break;
   }
