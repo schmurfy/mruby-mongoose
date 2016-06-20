@@ -1,6 +1,6 @@
 module DNSHandler
-  def dns_request(msg)
-    p msg.requests
+  def dns_message(msg)
+    p msg.questions
   end
   
   def connected()

@@ -24,17 +24,6 @@ static mrb_value _set_protocol_mqtt(mrb_state *mrb, mrb_value self)
 // Connection class (private)
 ////////////////////////////////
 
-static inline void ensure_hash_is_empty(mrb_state *mrb, mrb_value m_hash)
-{
-  // if there are keys left, raise an error
-  if( !mrb_bool(mrb_hash_empty_p(mrb, m_hash)) ){
-    mrb_raisef(mrb, E_ARGUMENT_ERROR, "unknown keys: %S",
-        mrb_ary_join(mrb, mrb_hash_keys(mrb, m_hash), mrb_str_new_cstr(mrb, ", "))
-      );
-  }
-
-}
-
 static mrb_value _subscribe(mrb_state *mrb, mrb_value self)
 {
   // int flags = 0;
