@@ -63,10 +63,11 @@ static mrb_value _headers(mrb_state *mrb, mrb_value self)
 // Connection class (private)
 ////////////////////////////////
 
+#define GET_OPT(NAME, VAR) if( !mrb_nil_p(VAR = mrb_hash_delete_key(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, NAME)))) )
 
 static mrb_value _serve_http(mrb_state *mrb, mrb_value self)
 {
-  mrb_value m_req, m_opts;
+  mrb_value m_req, m_opts, m_val;
   connection_state *st = (connection_state *) DATA_PTR(self);
   struct http_message *req;
   struct mg_serve_http_opts opts;
@@ -77,6 +78,21 @@ static mrb_value _serve_http(mrb_state *mrb, mrb_value self)
   
   bzero(&opts, sizeof(opts));
   opts.document_root = ".";
+  
+  GET_OPT("document_root", m_val){
+    opts.document_root = mrb_str_to_cstr(mrb, m_val);
+  }
+  
+  GET_OPT("index_files", m_val){
+    opts.index_files = mrb_str_to_cstr(mrb, m_val);
+  }
+  
+  GET_OPT("extra_headers", m_val){
+    opts.extra_headers = mrb_str_to_cstr(mrb, m_val);
+  }
+  
+  
+  ensure_hash_is_empty(mrb, m_opts);
   
   mg_serve_http(st->conn, req, opts);
   
