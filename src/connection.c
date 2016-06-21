@@ -280,6 +280,29 @@ static mrb_value _manager(mrb_state *mrb, mrb_value self)
   return mgr->m_obj;
 }
 
+static mrb_value _last_io_time(mrb_state *mrb, mrb_value self)
+{
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  return mrb_fixnum_value(st->conn->last_io_time);
+}
+
+static mrb_value _next_timer(mrb_state *mrb, mrb_value self)
+{
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  return mrb_float_value(st->mrb, st->conn->ev_timer_time);
+}
+
+#define TEST_FLAG(FUNC_NAME, FLAG_NAME) static mrb_value FUNC_NAME (mrb_state *mrb, mrb_value self) { \
+  connection_state *st = (connection_state *) DATA_PTR(self); \
+  if( st->conn->flags & FLAG_NAME ){ return mrb_true_value(); } \
+  else { return mrb_false_value(); } }
+
+
+
+TEST_FLAG(_is_listening,  MG_F_LISTENING);
+TEST_FLAG(_is_udp,        MG_F_UDP);
+TEST_FLAG(_is_resolving,  MG_F_RESOLVING);
+TEST_FLAG(_is_connecting, MG_F_CONNECTING);
 ////////////////////
 // public
 ///////////////////
@@ -335,6 +358,12 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   connection_class = mrb_define_class_under(mrb, mod, "Connection", NULL);
   MRB_SET_INSTANCE_TT(connection_class, MRB_TT_DATA);
   
+  mrb_define_method(mrb, connection_class, "last_io_time", _last_io_time, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "next_timer", _next_timer, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "listening?", _is_listening, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "udp?", _is_udp, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "resolving?", _is_resolving, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "connecting?", _is_connecting, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "send_data", _send_data, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, connection_class, "local_address", _local_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
