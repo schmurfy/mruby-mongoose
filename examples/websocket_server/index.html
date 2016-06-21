@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<input type="text" placeholder="text to send"  id="text1"/>
+<input type="button" value="send" id="btn1"/>
+<input type="button" value="close" id="close"/>
+<ul>
+
+</ul>
+<script>
+  var ws = new WebSocket("ws://localhost:8080");
+  var oUl = document.getElementsByTagName('ul')[0], oBtn = document.getElementById('btn1'),
+          oText = document.getElementById('text1'),oClose = document.getElementById('close');
+  
+  ws.onopen = function(){
+    console.log('open');
+
+    oBtn.onclick=function(){
+      if(oText.value){
+        ws.send(oText.value);
+      }
+    }
+    oClose.onclick=function(){
+      ws.close();
+    }
+    
+    ws.onclose=function(){
+      console.log('closed');
+    }
+    
+    ws.onmessage=function(e){
+      oUl.innerHTML+="<li>"+ e.data.toString()+"</li>";
+    }
+  }
+</script>
+</body>
+</html>

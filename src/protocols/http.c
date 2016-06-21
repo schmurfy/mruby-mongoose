@@ -99,6 +99,22 @@ static mrb_value _serve_http(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+
+static mrb_value _send_websocket_frame(mrb_state *mrb, mrb_value self)
+{
+  char *data;
+  mrb_int data_size;
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  
+  mrb_get_args(mrb, "s", &data, &data_size);
+  
+  // also WEBSOCKET_OP_BINARY
+  mg_send_websocket_frame(st->conn, WEBSOCKET_OP_TEXT, data, data_size);
+  
+  return self;
+}
+
+
 static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
 {
   connection_state *st = (connection_state *) DATA_PTR(self);
@@ -108,6 +124,19 @@ static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
   mrb_include_module(mrb, st->m_class, http_mixin);
   
   return self;
+}
+
+
+static mrb_value _is_websocket(mrb_state *mrb, mrb_value self)
+{
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  
+  if( st->conn->flags & MG_F_IS_WEBSOCKET ){
+    return mrb_true_value();
+  }
+  else {
+    return mrb_false_value();
+  }
 }
 
 
@@ -140,6 +169,25 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
       }
     }
     break;
+  
+  case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_handshake_done") ){
+        mrb_funcall(st->mrb, st->m_handler, "websocket_handshake_done", 0);
+      }
+    }
+    break;
+  
+  case MG_EV_WEBSOCKET_FRAME: {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_frame") ){
+        struct websocket_message *wm = (struct websocket_message *) p;
+        
+        mrb_funcall(st->mrb, st->m_handler, "websocket_frame", 1,
+            mrb_str_new(st->mrb, (char *)wm->data, wm->size)
+          );
+      }
+    }
+    break;
+  
   }
   
   return handled;
@@ -167,6 +215,8 @@ void register_http_protocol(mrb_state *mrb, struct RClass *connection_class, str
   mrb_define_method(mrb, http_message_class, "resp_code", _resp_code, MRB_ARGS_NONE());
   
   mrb_define_method(mrb, http_mixin, "serve_http", _serve_http, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
+  mrb_define_method(mrb, http_mixin, "send_websocket_frame", _send_websocket_frame, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, http_mixin, "is_websocket?", _is_websocket, MRB_ARGS_NONE());
   
   
   mrb_define_method(mrb, connection_class, "set_protocol_http_websocket", _set_protocol_http_websocket, MRB_ARGS_NONE());
