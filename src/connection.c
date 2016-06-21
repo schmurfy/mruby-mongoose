@@ -1,5 +1,6 @@
 
 #include "gem.h"
+#include "manager.h"
 #include "connection.h"
 
 ////////////////////
@@ -271,6 +272,13 @@ static mrb_value _authenticate_with(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value _manager(mrb_state *mrb, mrb_value self)
+{
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  struct manager_state *mgr = (struct manager_state *)st->conn->mgr->user_data;
+  
+  return mgr->m_obj;
+}
 
 ////////////////////
 // public
@@ -306,6 +314,7 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
   st->mrb = mrb;
   st->conn = nc;
+  st->m_handler = mrb_nil_value();
   
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
@@ -330,6 +339,7 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, connection_class, "local_address", _local_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "set_timer", _set_timer, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, connection_class, "manager", _manager, MRB_ARGS_NONE());
   
   mrb_define_method(mrb, connection_class, "authenticate_with", _authenticate_with, MRB_ARGS_REQ(2) | MRB_ARGS_OPT(1));
   

@@ -27,6 +27,8 @@ static mrb_value _initialize(mrb_state *mrb, mrb_value self)
   struct manager_state *st = (struct manager_state *)mrb_malloc(mrb, sizeof(struct manager_state));
   
   mg_mgr_init(&st->mgr, NULL);
+  st->mgr.user_data = (void *)st;
+  st->m_obj = self;
   mrb_data_init(self, st, &mrb_mg_type);
   
   return self;
@@ -44,6 +46,26 @@ static mrb_value _poll(mrb_state *mrb, mrb_value self)
   ret = mg_mgr_poll(&st->mgr, millis);
   
   return mrb_fixnum_value(ret);
+}
+
+
+static mrb_value _connections(mrb_state *mrb, mrb_value self)
+{
+  mrb_value m_ret;
+  struct mg_connection *c;
+  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  
+  m_ret = mrb_ary_new(mrb);
+  
+  for(c = mg_next(&st->mgr, NULL); c != NULL; c = mg_next(&st->mgr, c)) {
+    connection_state *st = (connection_state *) c->user_data;
+    
+    if( !mrb_nil_p(st->m_handler) ){
+      mrb_ary_push(mrb, m_ret, st->m_handler);
+    }
+  }
+  
+  return m_ret;
 }
 
 
@@ -129,6 +151,7 @@ void gem_init_manager_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, manager_class, "initialize", _initialize, MRB_ARGS_NONE());
   mrb_define_method(mrb, manager_class, "bind", _bind, MRB_ARGS_ARG(1, 1));
   mrb_define_method(mrb, manager_class, "connect", _connect, MRB_ARGS_ARG(1, 1));
+  mrb_define_method(mrb, manager_class, "connections", _connections, MRB_ARGS_NONE());
   
   
   mrb_define_method(mrb, manager_class, "poll", _poll, MRB_ARGS_REQ(1));
