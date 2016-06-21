@@ -5,6 +5,10 @@ MRuby::Build.new do |conf|
   conf.gembox 'full-core'
   conf.gem File.expand_path(File.dirname(__FILE__)) do
     
+    # for HTTPS
+    cc.include_paths << '/usr/local/Cellar/openssl/1.0.2h_1/include'
+    linker.libraries += %w(crypto ssl)
+    
     # add ipv6 support
     # cc.defines << "MG_ENABLE_IPV6"
     
@@ -15,6 +19,7 @@ MRuby::Build.new do |conf|
     # enable optional features
     # cc.defines << "MG_ENABLE_MQTT_BROKER"
     cc.defines << "MG_ENABLE_DNS_SERVER"
+    cc.defines << "MG_ENABLE_SSL"
     # cc.defines << "MG_ENABLE_COAP"
     # cc.defines << "MG_ENABLE_GETADDRINFO"
     

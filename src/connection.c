@@ -280,6 +280,24 @@ static mrb_value _manager(mrb_state *mrb, mrb_value self)
   return mgr->m_obj;
 }
 
+#ifdef MG_ENABLE_SSL
+static mrb_value _set_ssl(mrb_state *mrb, mrb_value self)
+{
+  char *cert, *ca_cert = NULL;
+  const char *err_str;
+  connection_state *st = (connection_state *) DATA_PTR(self);
+  
+  mrb_get_args(mrb, "z|z", &cert, &ca_cert);
+  
+  err_str = mg_set_ssl(st->conn, cert, ca_cert);
+  if( err_str != NULL ){
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, err_str);
+  }
+  
+  return self;
+}
+#endif
+
 static mrb_value _last_io_time(mrb_state *mrb, mrb_value self)
 {
   connection_state *st = (connection_state *) DATA_PTR(self);
@@ -303,6 +321,11 @@ TEST_FLAG(_is_listening,  MG_F_LISTENING);
 TEST_FLAG(_is_udp,        MG_F_UDP);
 TEST_FLAG(_is_resolving,  MG_F_RESOLVING);
 TEST_FLAG(_is_connecting, MG_F_CONNECTING);
+
+#ifdef MG_ENABLE_SSL
+TEST_FLAG(_is_ssl_handshake_done, MG_F_SSL_HANDSHAKE_DONE);
+#endif
+
 ////////////////////
 // public
 ///////////////////
@@ -364,6 +387,12 @@ void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, connection_class, "udp?", _is_udp, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "resolving?", _is_resolving, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "connecting?", _is_connecting, MRB_ARGS_NONE());
+
+#ifdef MG_ENABLE_SSL
+  mrb_define_method(mrb, connection_class, "ssl_handshake_done?", _is_ssl_handshake_done, MRB_ARGS_NONE());
+  mrb_define_method(mrb, connection_class, "set_ssl", _set_ssl, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
+#endif
+  
   mrb_define_method(mrb, connection_class, "send_data", _send_data, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, connection_class, "local_address", _local_address, MRB_ARGS_NONE());
   mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
