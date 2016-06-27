@@ -193,7 +193,7 @@ static mrb_value _send_dns_query(mrb_state *mrb, mrb_value self)
 {
   char *name;
   mrb_int type;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "zi", &name, &type);
   
@@ -207,7 +207,7 @@ static mrb_value _send_dns_query(mrb_state *mrb, mrb_value self)
 static mrb_value _send_dns_reply(mrb_state *mrb, mrb_value self)
 {
   mrb_value m_reply;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   my_reply *reply;
   
   mrb_get_args(mrb, "o", &m_reply);
@@ -222,7 +222,7 @@ static mrb_value _send_dns_reply(mrb_state *mrb, mrb_value self)
 
 static mrb_value _set_protocol_dns(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   mg_set_protocol_dns(st->conn);
   st->protocol = PROTO_TYPE_DNS;
   
@@ -241,7 +241,7 @@ uint8_t handle_dns_events(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   struct mg_dns_message *msg = (struct mg_dns_message *) p;
-  connection_state *st = (connection_state *)nc->user_data;
+  mongoose_connection_state *st = (mongoose_connection_state *)nc->user_data;
   
   // skip if this is not a dns connection
   if( st->protocol != PROTO_TYPE_DNS ){

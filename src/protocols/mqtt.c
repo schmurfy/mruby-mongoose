@@ -6,7 +6,7 @@ static struct RClass *mqtt_mixin;
 
 static mrb_value _set_protocol_mqtt(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   mg_set_protocol_mqtt(st->conn);
   st->protocol = PROTO_TYPE_MQTT;
   
@@ -31,7 +31,7 @@ static mrb_value _subscribe(mrb_state *mrb, mrb_value self)
   // char *topic;
   mrb_value m_opts = mrb_nil_value();
   struct mg_mqtt_topic_expression topic_expression;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   int ai = mrb_gc_arena_save(mrb);
   
   mrb_get_args(mrb, "z|H", &topic_expression.topic, &m_opts);
@@ -70,7 +70,7 @@ static mrb_value _publish(mrb_state *mrb, mrb_value self)
   mrb_int id = 0;
   char *topic, *data;
   mrb_value m_opts = mrb_nil_value();
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   int ai = mrb_gc_arena_save(mrb);
   
   mrb_get_args(mrb, "zz|H", &topic, &data, &m_opts);
@@ -115,7 +115,7 @@ uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
-  connection_state *st = (connection_state *)nc->user_data;
+  mongoose_connection_state *st = (mongoose_connection_state *)nc->user_data;
   
   // skip if this is not an mqtt connection
   if( st->protocol != PROTO_TYPE_MQTT ){

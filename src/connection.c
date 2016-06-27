@@ -11,7 +11,7 @@ struct RClass *mongoose_connection_class;
 static void _free_state(mrb_state *mrb, void *ptr)
 {
   if( ptr != NULL ){
-    connection_state *st = (connection_state *) ptr;
+    mongoose_connection_state *st = (mongoose_connection_state *) ptr;
     
     if( st->auth.user != NULL ){
       mrb_free(mrb, st->auth.user);
@@ -51,13 +51,13 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
 {
   
   if( nc->listener ){
-    connection_state *listener_st, *st;
+    mongoose_connection_state *listener_st, *st;
     // mrb_value m_class;
     
     // get back the base class we created earlier
-    listener_st = (connection_state *) nc->listener->user_data;
+    listener_st = (mongoose_connection_state *) nc->listener->user_data;
     
-    st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
+    st = (mongoose_connection_state *) mrb_calloc(mrb, 1, sizeof(mongoose_connection_state) );
     st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, listener_st->m_class, (void*)st, &mrb_connection_type) );
     mrb_gc_register(mrb, st->m_handler);
     
@@ -85,12 +85,12 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 {
   int ai;
   uint8_t handled = 0;
-  connection_state *st;
+  mongoose_connection_state *st;
   
   switch(ev){
   case MG_EV_TIMER:
     {
-      st = (connection_state *)nc->user_data;
+      st = (mongoose_connection_state *)nc->user_data;
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "timer") ){
         mrb_funcall(st->mrb, st->m_handler, "timer", 0);
         handled = 1;
@@ -100,7 +100,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 
   case MG_EV_RECV:
     {
-      st = (connection_state *) nc->user_data;
+      st = (mongoose_connection_state *) nc->user_data;
       
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "data_received") ){
         mrb_value data;
@@ -122,7 +122,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 
   case MG_EV_CLOSE:
     {
-      st = (connection_state *)nc->user_data;
+      st = (mongoose_connection_state *)nc->user_data;
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
         mrb_funcall(st->mrb, st->m_handler, "closed", 0);
         handled = 1;
@@ -139,7 +139,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
-  connection_state *st = (connection_state *)nc->user_data;;
+  mongoose_connection_state *st = (mongoose_connection_state *)nc->user_data;;
   int ai = mrb_gc_arena_save(st->mrb);
   
   switch(ev){
@@ -172,12 +172,12 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
 void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
-  connection_state *st;
+  mongoose_connection_state *st;
   
   switch(ev){
   case MG_EV_ACCEPT:
     {
-      st = (connection_state *)nc->listener->user_data;
+      st = (mongoose_connection_state *)nc->listener->user_data;
       
       // instantiate ruby connection class (called with both UDP and TCP),
       // for UDP this event is sent on the first packet received
@@ -198,7 +198,7 @@ void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
 static mrb_value _local_address(mrb_state *mrb, mrb_value self)
 {
   char buffer[100];
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mg_conn_addr_to_str(st->conn, buffer, sizeof(buffer),
       MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT
@@ -210,7 +210,7 @@ static mrb_value _local_address(mrb_state *mrb, mrb_value self)
 static mrb_value _remote_address(mrb_state *mrb, mrb_value self)
 {
   char buffer[100];
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mg_conn_addr_to_str(st->conn, buffer, sizeof(buffer),
       MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT | MG_SOCK_STRINGIFY_REMOTE
@@ -223,7 +223,7 @@ static mrb_value _remote_address(mrb_state *mrb, mrb_value self)
 static mrb_value _send_data(mrb_state *mrb, mrb_value self)
 {
   char *str;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "z", &str);
   mg_send(st->conn, str, strlen(str));
@@ -235,7 +235,7 @@ static mrb_value _send_data(mrb_state *mrb, mrb_value self)
 // send queued data and then close the connection
 static mrb_value _close_after_send(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   st->conn->flags |= MG_F_SEND_AND_CLOSE;
   return mrb_nil_value();
 }
@@ -243,7 +243,7 @@ static mrb_value _close_after_send(mrb_state *mrb, mrb_value self)
 // close connection immediately
 static mrb_value _close(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   st->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
   return mrb_nil_value();
 }
@@ -251,7 +251,7 @@ static mrb_value _close(mrb_state *mrb, mrb_value self)
 static mrb_value _set_timer(mrb_state *mrb, mrb_value self)
 {
   mrb_int m_delay;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "i", &m_delay);
   mg_set_timer(st->conn, mg_time() + (m_delay / 1000.0) );
@@ -261,7 +261,7 @@ static mrb_value _set_timer(mrb_state *mrb, mrb_value self)
 static mrb_value _authenticate_with(mrb_state *mrb, mrb_value self)
 {
   char *user, *pass, *type = NULL;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "zz|z", &user, &pass, &type);
   
@@ -281,7 +281,7 @@ static mrb_value _authenticate_with(mrb_state *mrb, mrb_value self)
 
 static mrb_value _manager(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   struct manager_state *mgr = (struct manager_state *)st->conn->mgr->user_data;
   
   return mgr->m_obj;
@@ -292,7 +292,7 @@ static mrb_value _set_ssl(mrb_state *mrb, mrb_value self)
 {
   char *cert, *ca_cert = NULL;
   const char *err_str;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "z|z", &cert, &ca_cert);
   
@@ -307,18 +307,18 @@ static mrb_value _set_ssl(mrb_state *mrb, mrb_value self)
 
 static mrb_value _last_io_time(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   return mrb_fixnum_value(st->conn->last_io_time);
 }
 
 static mrb_value _next_timer(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   return mrb_float_value(st->mrb, st->conn->ev_timer_time);
 }
 
 #define TEST_FLAG(FUNC_NAME, FLAG_NAME) static mrb_value FUNC_NAME (mrb_state *mrb, mrb_value self) { \
-  connection_state *st = (connection_state *) DATA_PTR(self); \
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self); \
   if( st->conn->flags & FLAG_NAME ){ return mrb_true_value(); } \
   else { return mrb_false_value(); } }
 
@@ -339,10 +339,10 @@ TEST_FLAG(_is_ssl_handshake_done, MG_F_SSL_HANDSHAKE_DONE);
 
 mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
-  connection_state *st;
+  mongoose_connection_state *st;
   
   
-  st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
+  st = (mongoose_connection_state *) mrb_calloc(mrb, 1, sizeof(mongoose_connection_state) );
   st->mrb = mrb;
   st->conn = nc;
   st->m_arg = m_arg;
@@ -361,10 +361,10 @@ mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb
 
 mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
-  connection_state *st;
+  mongoose_connection_state *st;
   
   
-  st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
+  st = (mongoose_connection_state *) mrb_calloc(mrb, 1, sizeof(mongoose_connection_state) );
   st->mrb = mrb;
   st->conn = nc;
   st->m_arg = m_arg;

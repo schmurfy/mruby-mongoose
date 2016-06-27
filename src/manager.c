@@ -58,7 +58,7 @@ static mrb_value _connections(mrb_state *mrb, mrb_value self)
   m_ret = mrb_ary_new(mrb);
   
   for(c = mg_next(&st->mgr, NULL); c != NULL; c = mg_next(&st->mgr, c)) {
-    connection_state *st = (connection_state *) c->user_data;
+    mongoose_connection_state *st = (mongoose_connection_state *) c->user_data;
     
     if( !mrb_nil_p(st->m_handler) ){
       mrb_ary_push(mrb, m_ret, st->m_handler);

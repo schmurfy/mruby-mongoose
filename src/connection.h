@@ -1,21 +1,7 @@
 #ifndef _CONNECTION_H
 #define _CONNECTION_H
 
-typedef struct {
-  char *user;
-  char *pass;
-  char *type;
-} authentication_data;
-
-typedef struct {
-  struct mg_connection  *conn;
-  struct RClass         *m_class;
-  mrb_state             *mrb;
-  mrb_value             m_handler;
-  mrb_value             m_arg;
-  uint8_t               protocol;
-  authentication_data   auth;
-} connection_state;
+#include "mg_struct.h"
 
 mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg);
 mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg);

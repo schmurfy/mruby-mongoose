@@ -68,7 +68,7 @@ static mrb_value _headers(mrb_state *mrb, mrb_value self)
 static mrb_value _serve_http(mrb_state *mrb, mrb_value self)
 {
   mrb_value m_req, m_opts, m_val;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   struct http_message *req;
   struct mg_serve_http_opts opts;
   
@@ -104,7 +104,7 @@ static mrb_value _send_websocket_frame(mrb_state *mrb, mrb_value self)
 {
   char *data;
   mrb_int data_size;
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "s", &data, &data_size);
   
@@ -117,7 +117,7 @@ static mrb_value _send_websocket_frame(mrb_state *mrb, mrb_value self)
 
 static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   mg_set_protocol_http_websocket(st->conn);
   st->protocol = PROTO_TYPE_HTTP;
   
@@ -129,7 +129,7 @@ static mrb_value _set_protocol_http_websocket(mrb_state *mrb, mrb_value self)
 
 static mrb_value _is_websocket(mrb_state *mrb, mrb_value self)
 {
-  connection_state *st = (connection_state *) DATA_PTR(self);
+  mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
   
   if( st->conn->flags & MG_F_IS_WEBSOCKET ){
     return mrb_true_value();
@@ -149,7 +149,7 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   struct http_message *req = (struct http_message *)p;
-  connection_state *st = (connection_state *)nc->user_data;
+  mongoose_connection_state *st = (mongoose_connection_state *)nc->user_data;
   
   // skip if this is not an http connection
   if( st->protocol != PROTO_TYPE_HTTP ){
