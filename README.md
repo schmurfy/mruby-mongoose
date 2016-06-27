@@ -7,18 +7,19 @@ There are other alternatives out there like mruby-uv but mongoose does a lot mor
 
 # Current implementation
 
-| Protocol  | Client | Server |
-|:----------|:-------|:-------|
-| UDP       | OK     | OK     |
-| TCP       | OK     | OK     |
-| DNS       | OK     | OK     |
-| HTTP      |        | OK     |
-| HTTPS     |        | OK     |
-| Websocket |        | OK     |
-| WebDAV    |        |        |
-| MQTT      | OK     |        |
-| CoAP      |        |        |
-| JSON-RPC  |        |        |
+| Protocol         | Client | Server |
+|:-----------------|:-------|:-------|
+| UDP              | OK     | OK     |
+| TCP              | OK     | OK     |
+| DNS              | OK     | OK     |
+| HTTP             |        | OK     |
+| HTTPS            |        | OK     |
+| Websocket        |        | OK     |
+| Secure Websocket |        | OK     |
+| WebDAV           |        |        |
+| MQTT             | OK     |        |
+| CoAP             |        |        |
+| JSON-RPC         |        |        |
 
 All of these are not strictly required for my current goal so I will implement them as things go, if you wish to see one implemented feel free to ask, pull requests are welcome too.
 If you submit a pull request please make sure your code matches with the existing (match style and use soft tabs with 2 spaces).
