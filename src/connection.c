@@ -6,7 +6,7 @@
 ////////////////////
 // internal state
 ///////////////////
-static struct RClass *connection_class;
+struct RClass *mongoose_connection_class;
 
 static void _free_state(mrb_state *mrb, void *ptr)
 {
@@ -38,7 +38,7 @@ static struct RClass *create_connection_class(mrb_state *mrb, mrb_value m_module
   struct RClass *class;
   
   // create an anonymous class
-  class = mrb_class_new(mrb, connection_class);
+  class = mrb_class_new(mrb, mongoose_connection_class);
   
   // mix our module in
   mrb_include_module(mrb, class, mrb_class_ptr(m_module));
@@ -390,33 +390,33 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
 
 void gem_init_connection_class(mrb_state *mrb, struct RClass *mod)
 {
-  connection_class = mrb_define_class_under(mrb, mod, "Connection", NULL);
-  MRB_SET_INSTANCE_TT(connection_class, MRB_TT_DATA);
+  mongoose_connection_class = mrb_define_class_under(mrb, mod, "Connection", NULL);
+  MRB_SET_INSTANCE_TT(mongoose_connection_class, MRB_TT_DATA);
   
-  mrb_define_method(mrb, connection_class, "last_io_time", _last_io_time, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "next_timer", _next_timer, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "listening?", _is_listening, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "udp?", _is_udp, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "resolving?", _is_resolving, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "connecting?", _is_connecting, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "last_io_time", _last_io_time, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "next_timer", _next_timer, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "listening?", _is_listening, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "udp?", _is_udp, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "resolving?", _is_resolving, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "connecting?", _is_connecting, MRB_ARGS_NONE());
 
 #ifdef MG_ENABLE_SSL
-  mrb_define_method(mrb, connection_class, "ssl_handshake_done?", _is_ssl_handshake_done, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "set_ssl", _set_ssl, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
+  mrb_define_method(mrb, mongoose_connection_class, "ssl_handshake_done?", _is_ssl_handshake_done, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "set_ssl", _set_ssl, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
 #endif
   
-  mrb_define_method(mrb, connection_class, "send_data", _send_data, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, connection_class, "local_address", _local_address, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "set_timer", _set_timer, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, connection_class, "manager", _manager, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "send_data", _send_data, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, mongoose_connection_class, "local_address", _local_address, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "remote_address", _remote_address, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "set_timer", _set_timer, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, mongoose_connection_class, "manager", _manager, MRB_ARGS_NONE());
   
-  mrb_define_method(mrb, connection_class, "authenticate_with", _authenticate_with, MRB_ARGS_REQ(2) | MRB_ARGS_OPT(1));
+  mrb_define_method(mrb, mongoose_connection_class, "authenticate_with", _authenticate_with, MRB_ARGS_REQ(2) | MRB_ARGS_OPT(1));
   
-  mrb_define_method(mrb, connection_class, "close_after_send", _close_after_send, MRB_ARGS_NONE());
-  mrb_define_method(mrb, connection_class, "close", _close, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "close_after_send", _close_after_send, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_connection_class, "close", _close, MRB_ARGS_NONE());
   
-  register_http_protocol(mrb, connection_class, mod);
-  register_mqtt_protocol(mrb, connection_class, mod);
-  register_dns_protocol(mrb, connection_class, mod);
+  register_http_protocol(mrb, mongoose_connection_class, mod);
+  register_mqtt_protocol(mrb, mongoose_connection_class, mod);
+  register_dns_protocol(mrb, mongoose_connection_class, mod);
 }
