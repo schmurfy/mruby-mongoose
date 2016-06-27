@@ -4,7 +4,8 @@ MRuby::Build.new do |conf|
   conf.enable_test
   
   conf.gem(core: 'mruby-bin-mruby')
-  conf.gem(core: 'mruby-print')
+  conf.gem(core: 'mruby-print') # puts, p
+  conf.gem(core: 'mruby-sprintf') # format
   conf.gem File.expand_path(File.dirname(__FILE__)) do
     
     # for HTTPS
