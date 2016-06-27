@@ -22,6 +22,9 @@ MRuby::Gem::Specification.new('mruby-mongoose') do |spec|
   spec.cc.include_paths << File.expand_path('../mruby/include', __FILE__)
   # spec.linker.libraries << ''
   
+  
+  spec.export_include_paths << File.expand_path('../mongoose/', __FILE__)
+  
   # spec.cc.defines += %w(
   #   -DMG_MALLOC=mrb_malloc
   #   -DMG_CALLOC=mrb_calloc
