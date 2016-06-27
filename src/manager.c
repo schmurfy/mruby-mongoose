@@ -92,6 +92,58 @@ error:
   return mrb_nil_value();
 }
 
+#ifdef WITH_SERIAL
+#include <termios.h>
+
+static mrb_value _add_serial(mrb_state *mrb, mrb_value self)
+{
+  char *serial_port;
+  int fd = -1;
+  mrb_int baudrate;
+  struct termios options;
+  mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value();
+  struct mg_connection *nc;
+  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  
+  if( mrb_get_args(mrb, "zi|Co", &serial_port, &baudrate, &m_module, &m_arg) >= 2 ){
+    // a module was provided, check it
+    mrb_check_type(mrb, m_module, MRB_TT_MODULE);
+  }
+  
+  fd = open(serial_port, O_RDWR | O_NDELAY);
+  if( fd == -1 ) {
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "unable to open UART. Maybe UART in use by another application or device is not ready.\n");
+    goto error;
+  }
+  
+  
+  tcgetattr(fd, &options);
+  
+  switch(baudrate){
+    case 9600:    options.c_cflag = B9600;    break;
+    case 19200:   options.c_cflag = B19200;   break;
+    case 57600:   options.c_cflag = B57600;   break;
+    case 115200:  options.c_cflag = B115200;  break;
+    default:
+      mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid baudrate");
+      goto error;
+  }
+  
+  options.c_cflag |= CS8 | CLOCAL | CREAD;
+  options.c_iflag = IGNPAR | ICRNL | PARENB;
+  options.c_oflag = 0;
+  options.c_lflag = 0;
+  tcflush(fd, TCIFLUSH);
+  tcsetattr(fd, TCSANOW, &options);
+  
+  nc = mg_add_sock(&st->mgr, fd, _client_ev_handler);
+  
+  return create_client_connection(mrb, nc, m_module, m_arg);
+
+error:
+  return mrb_nil_value();
+}
+#endif
 
 static mrb_value _bind(mrb_state *mrb, mrb_value self)
 {
@@ -152,6 +204,10 @@ void gem_init_manager_class(mrb_state *mrb, struct RClass *mod)
   mrb_define_method(mrb, manager_class, "bind", _bind, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
   mrb_define_method(mrb, manager_class, "connect", _connect, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
   mrb_define_method(mrb, manager_class, "connections", _connections, MRB_ARGS_NONE());
+
+#ifdef WITH_SERIAL
+  mrb_define_method(mrb, manager_class, "add_serial", _add_serial, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
+#endif
   
   
   mrb_define_method(mrb, manager_class, "poll", _poll, MRB_ARGS_REQ(1));
