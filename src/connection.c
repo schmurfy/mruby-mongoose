@@ -83,6 +83,7 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
 // return true if the event was handled
 static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
 {
+  int ai;
   uint8_t handled = 0;
   connection_state *st;
   
@@ -95,8 +96,41 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
         handled = 1;
       }
     }
-    
     break;
+
+  case MG_EV_RECV:
+    {
+      st = (connection_state *) nc->user_data;
+      
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "data_received") ){
+        mrb_value data;
+        struct mbuf *io = &nc->recv_mbuf;
+        ai = mrb_gc_arena_save(st->mrb);
+        data = mrb_str_new(st->mrb, io->buf, io->len);
+        
+        // remove data from buffer
+        mbuf_remove(io, io->len);
+        
+        // mrb_full_gc(st->mrb);
+        mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
+        mrb_gc_arena_restore(st->mrb, ai);
+        handled = 1;
+      }
+    
+    }
+    break;
+
+  case MG_EV_CLOSE:
+    {
+      st = (connection_state *)nc->user_data;
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
+        mrb_funcall(st->mrb, st->m_handler, "closed", 0);
+        handled = 1;
+      }
+      
+    }
+    break;
+  
   }
   
   return handled;
@@ -126,6 +160,7 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
   
   // pass the event along if not handled
   (handled ||
+    shared_handler(nc, ev, p) ||
     handle_mqtt_events(nc, ev, p) ||
     handle_dns_events(nc, ev, p)
   );
@@ -136,7 +171,6 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
 
 void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
-  int ai;
   uint8_t handled = 0;
   connection_state *st;
   
@@ -151,38 +185,6 @@ void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
     }
     break;
   
-  case MG_EV_CLOSE:
-    {
-      st = (connection_state *)nc->user_data;
-      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
-        mrb_funcall(st->mrb, st->m_handler, "closed", 0);
-        handled = 1;
-      }
-      
-    }
-    break;
-  
-  case MG_EV_RECV:
-    {
-      st = (connection_state *) nc->user_data;
-      
-      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "data_received") ){
-        mrb_value data;
-        struct mbuf *io = &nc->recv_mbuf;
-        ai = mrb_gc_arena_save(st->mrb);
-        data = mrb_str_new(st->mrb, io->buf, io->len);
-        
-        // remove data from buffer
-        mbuf_remove(io, io->len);
-        
-        // mrb_full_gc(st->mrb);
-        mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
-        mrb_gc_arena_restore(st->mrb, ai);
-        handled = 1;
-      }
-    
-    }
-    break;
   }
   
   // pass the event along if not handled
