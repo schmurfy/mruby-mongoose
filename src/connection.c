@@ -360,19 +360,17 @@ mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb
 mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
   connection_state *st;
-  mrb_value ret;
   
   
   st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
   st->mrb = mrb;
   st->conn = nc;
-  st->m_handler = mrb_nil_value();
   st->m_arg = m_arg;
   
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
   
-  ret = mrb_obj_value( mrb_data_object_alloc(mrb, connection_class, (void *)st, &mrb_connection_type) );
+  st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, st->m_class, (void *)st, &mrb_connection_type) );
   
   
   if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
@@ -384,7 +382,7 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   // and associate it with the mongoose connection
   nc->user_data = (void *) st;
   
-  return ret;
+  return st->m_handler;
 }
 
 
