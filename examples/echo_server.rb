@@ -2,6 +2,10 @@
 
 # the module will be mixed into the connection object
 module EchoHandler
+  def initialize(arg)
+    p [:initialize, arg]
+  end
+  
   def accepted()
     puts "new connection from #{remote_address} to #{local_address}, hello !"
   end
@@ -39,6 +43,6 @@ manager = Mongoose::Manager.new
 # manager.bind('tcp://[::1]:1234', EchoHandler)
 
 # ipv4
-manager.bind('tcp://127.0.0.1:1234', EchoHandler)
+manager.bind('tcp://127.0.0.1:1234', EchoHandler, 42)
 
 manager.run()

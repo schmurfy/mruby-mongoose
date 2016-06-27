@@ -64,11 +64,16 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
     st->mrb = mrb;
     st->conn = nc;
     st->protocol = listener_st->protocol;
+    st->m_arg = mrb_nil_value();
     
     nc->user_data = (void *)st;
     
-    if( MRB_RESPOND_TO(st->mrb, st->m_handler, "accepted") ){
-      mrb_funcall(st->mrb, st->m_handler, "accepted", 0);
+    if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
+      mrb_funcall(mrb, st->m_handler, "initialize", 1, listener_st->m_arg);
+    }
+    
+    if( MRB_RESPOND_TO(mrb, st->m_handler, "accepted") ){
+      mrb_funcall(mrb, st->m_handler, "accepted", 0);
     }
   }
   
@@ -330,7 +335,7 @@ TEST_FLAG(_is_ssl_handshake_done, MG_F_SSL_HANDSHAKE_DONE);
 // public
 ///////////////////
 
-mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module)
+mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
   connection_state *st;
   
@@ -338,6 +343,7 @@ mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb
   st = (connection_state *) mrb_calloc(mrb, 1, sizeof(connection_state) );
   st->mrb = mrb;
   st->conn = nc;
+  st->m_arg = m_arg;
   
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
@@ -351,7 +357,7 @@ mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb
 }
 
 
-mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module)
+mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
   connection_state *st;
   mrb_value ret;
@@ -361,13 +367,19 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   st->mrb = mrb;
   st->conn = nc;
   st->m_handler = mrb_nil_value();
+  st->m_arg = m_arg;
   
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
   
   ret = mrb_obj_value( mrb_data_object_alloc(mrb, connection_class, (void *)st, &mrb_connection_type) );
   
-  mrb_gc_register(mrb, ret);
+  
+  if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
+    mrb_funcall(mrb, st->m_handler, "initialize", 1, m_arg);
+  }
+  
+  // mrb_gc_register(mrb, ret);
   
   // and associate it with the mongoose connection
   nc->user_data = (void *) st;
