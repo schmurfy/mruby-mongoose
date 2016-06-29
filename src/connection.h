@@ -7,10 +7,6 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
 mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg);
 void gem_init_connection_class(mrb_state *mrb, struct RClass *mod);
 
-// handlers
-void _server_ev_handler(struct mg_connection *nc, int ev, void *p);
-void _client_ev_handler(struct mg_connection *nc, int ev, void *p);
-
 // protocols
 #define PROTO_TYPE_HTTP 1
 void register_http_protocol(mrb_state *, struct RClass *, struct RClass *);

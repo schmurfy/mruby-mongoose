@@ -84,7 +84,7 @@ static mrb_value _connect(mrb_state *mrb, mrb_value self)
     mrb_check_type(mrb, m_module, MRB_TT_MODULE);
   }
   
-  if( (nc = mg_connect(&st->mgr, addr, _client_ev_handler)) == NULL ){
+  if( (nc = mg_connect(&st->mgr, addr, mongoose_client_ev_handler)) == NULL ){
     mrb_raisef(mrb, E_ARGUMENT_ERROR, "failed to connect to %S", mrb_str_new_cstr(mrb, addr) );
     goto error;
   }
@@ -139,7 +139,7 @@ static mrb_value _add_serial(mrb_state *mrb, mrb_value self)
   tcflush(fd, TCIFLUSH);
   tcsetattr(fd, TCSANOW, &options);
   
-  nc = mg_add_sock(&st->mgr, fd, _client_ev_handler);
+  nc = mg_add_sock(&st->mgr, fd, mongoose_client_ev_handler);
   
   return create_client_connection(mrb, nc, m_module, m_arg);
 
@@ -160,7 +160,7 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
     mrb_check_type(mrb, m_module, MRB_TT_MODULE);
   }
   
-  if( (nc = mg_bind(&st->mgr, addr, _server_ev_handler)) == NULL ){
+  if( (nc = mg_bind(&st->mgr, addr, mongoose_server_ev_handler)) == NULL ){
     mrb_raisef(mrb, E_ARGUMENT_ERROR, "failed to bind on %S", mrb_str_new_cstr(mrb, addr) );
     goto error;
   }

@@ -136,7 +136,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
   return handled;
 }
 
-void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
+void mongoose_client_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   mongoose_connection_state *st = (mongoose_connection_state *)nc->user_data;;
@@ -169,7 +169,7 @@ void _client_ev_handler(struct mg_connection *nc, int ev, void *p)
 }
 
 
-void _server_ev_handler(struct mg_connection *nc, int ev, void *p)
+void mongoose_server_ev_handler(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   mongoose_connection_state *st;
