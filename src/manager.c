@@ -10,7 +10,7 @@
 
 static void _free_state(mrb_state *mrb, void *ptr)
 {
-  struct manager_state *st = (struct manager_state *)ptr;
+  mongoose_manager_state *st = (mongoose_manager_state *)ptr;
   mg_mgr_free(&st->mgr);
 }
 
@@ -24,7 +24,7 @@ static const mrb_data_type mrb_mg_type = { "$mongoose_manager", _free_state };
 
 static mrb_value _initialize(mrb_state *mrb, mrb_value self)
 {
-  struct manager_state *st = (struct manager_state *)mrb_malloc(mrb, sizeof(struct manager_state));
+  mongoose_manager_state *st = (mongoose_manager_state *)mrb_malloc(mrb, sizeof(mongoose_manager_state));
   
   mg_mgr_init(&st->mgr, NULL);
   st->mgr.user_data = (void *)st;
@@ -39,7 +39,7 @@ static mrb_value _poll(mrb_state *mrb, mrb_value self)
 {
   time_t ret;
   mrb_int millis;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "i", &millis);
   
@@ -53,7 +53,7 @@ static mrb_value _connections(mrb_state *mrb, mrb_value self)
 {
   mrb_value m_ret;
   struct mg_connection *c;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   m_ret = mrb_ary_new(mrb);
   
@@ -74,7 +74,7 @@ static mrb_value _connect(mrb_state *mrb, mrb_value self)
   char *addr;
   mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value();
   struct mg_connection *nc;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   if( mrb_get_args(mrb, "z|Co", &addr, &m_module, &m_arg) >= 2 ){
     // a module was provided, check it
@@ -103,7 +103,7 @@ static mrb_value _add_serial(mrb_state *mrb, mrb_value self)
   struct termios options;
   mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value();
   struct mg_connection *nc;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   if( mrb_get_args(mrb, "zi|Co", &serial_port, &baudrate, &m_module, &m_arg) >= 2 ){
     // a module was provided, check it
@@ -150,7 +150,7 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
   char *addr;
   mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value();
   struct mg_connection *nc;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   if( mrb_get_args(mrb, "z|Co", &addr, &m_module, &m_arg) >= 2 ){
     // a module was provided, check it
@@ -174,7 +174,7 @@ static mrb_value _run(mrb_state *mrb, mrb_value self)
 {
   mrb_value m_block = mrb_nil_value();
   mrb_int timeout = 10000;
-  struct manager_state *st = (struct manager_state *) DATA_PTR(self);
+  mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
   mrb_get_args(mrb, "|i&", &timeout, &m_block);
   

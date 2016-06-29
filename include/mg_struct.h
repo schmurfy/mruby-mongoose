@@ -2,6 +2,11 @@
 #define _MG_STRUCT_H
 
 typedef struct {
+  struct mg_mgr mgr;
+  mrb_value     m_obj;
+} mongoose_manager_state;
+
+typedef struct {
   char *user;
   char *pass;
   char *type;

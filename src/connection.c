@@ -282,7 +282,7 @@ static mrb_value _authenticate_with(mrb_state *mrb, mrb_value self)
 static mrb_value _manager(mrb_state *mrb, mrb_value self)
 {
   mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
-  struct manager_state *mgr = (struct manager_state *)st->conn->mgr->user_data;
+  mongoose_manager_state *mgr = (mongoose_manager_state *)st->conn->mgr->user_data;
   
   return mgr->m_obj;
 }
