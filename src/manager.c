@@ -2,11 +2,14 @@
 #include "gem.h"
 #include "manager.h"
 #include "connection.h"
+#include "mg_public.h"
 
 
 ////////////////////
 // internal state
 ///////////////////
+
+struct RClass *mongoose_manager_class;
 
 static void _free_state(mrb_state *mrb, void *ptr)
 {
@@ -195,20 +198,20 @@ static mrb_value _run(mrb_state *mrb, mrb_value self)
 ///////////////////
 void gem_init_manager_class(mrb_state *mrb, struct RClass *mod)
 {
-  struct RClass *manager_class = mrb_define_class_under(mrb, mod, "Manager", NULL);
-  MRB_SET_INSTANCE_TT(manager_class, MRB_TT_DATA);
+  mongoose_manager_class = mrb_define_class_under(mrb, mod, "Manager", NULL);
+  MRB_SET_INSTANCE_TT(mongoose_manager_class, MRB_TT_DATA);
   
-  mrb_define_method(mrb, manager_class, "run", _run, MRB_ARGS_OPT(1) | MRB_ARGS_BLOCK());
+  mrb_define_method(mrb, mongoose_manager_class, "run", _run, MRB_ARGS_OPT(1) | MRB_ARGS_BLOCK());
   
-  mrb_define_method(mrb, manager_class, "initialize", _initialize, MRB_ARGS_NONE());
-  mrb_define_method(mrb, manager_class, "bind", _bind, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
-  mrb_define_method(mrb, manager_class, "connect", _connect, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
-  mrb_define_method(mrb, manager_class, "connections", _connections, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_manager_class, "initialize", _initialize, MRB_ARGS_NONE());
+  mrb_define_method(mrb, mongoose_manager_class, "bind", _bind, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
+  mrb_define_method(mrb, mongoose_manager_class, "connect", _connect, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
+  mrb_define_method(mrb, mongoose_manager_class, "connections", _connections, MRB_ARGS_NONE());
 
 #ifdef WITH_SERIAL
-  mrb_define_method(mrb, manager_class, "add_serial", _add_serial, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
+  mrb_define_method(mrb, mongoose_manager_class, "add_serial", _add_serial, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(2));
 #endif
   
   
-  mrb_define_method(mrb, manager_class, "poll", _poll, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, mongoose_manager_class, "poll", _poll, MRB_ARGS_REQ(1));
 }
