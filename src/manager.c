@@ -89,7 +89,7 @@ static mrb_value _connect(mrb_state *mrb, mrb_value self)
     goto error;
   }
   
-  return create_client_connection(mrb, nc, m_module, m_arg);
+  return mongoose_create_client_connection(mrb, nc, m_module, m_arg);
   
 error:
   return mrb_nil_value();
@@ -141,7 +141,7 @@ static mrb_value _add_serial(mrb_state *mrb, mrb_value self)
   
   nc = mg_add_sock(&st->mgr, fd, mongoose_client_ev_handler);
   
-  return create_client_connection(mrb, nc, m_module, m_arg);
+  return mongoose_create_client_connection(mrb, nc, m_module, m_arg);
 
 error:
   return mrb_nil_value();

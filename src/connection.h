@@ -4,7 +4,6 @@
 #include "mg_struct.h"
 
 mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg);
-mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg);
 void gem_init_connection_class(mrb_state *mrb, struct RClass *mod);
 
 // protocols

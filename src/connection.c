@@ -337,7 +337,7 @@ TEST_FLAG(_is_ssl_handshake_done, MG_F_SSL_HANDSHAKE_DONE);
 // public
 ///////////////////
 
-mrb_value create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
+mrb_value mongoose_create_client_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value m_module, mrb_value m_arg)
 {
   mongoose_connection_state *st;
   
