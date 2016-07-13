@@ -29,4 +29,6 @@ MRuby::Gem::Specification.new('mruby-mongoose') do |spec|
   #   -DMG_MALLOC=mrb_malloc
   #   -DMG_CALLOC=mrb_calloc
   # )
+  
+  spec.add_dependency 'mruby-error'
 end

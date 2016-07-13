@@ -1,5 +1,6 @@
 
 #include "../gem.h"
+#include "../utils.h"
 #include "../connection.h"
 
 static struct RClass *mqtt_mixin;
@@ -16,7 +17,7 @@ static mrb_value _set_protocol_mqtt(mrb_state *mrb, mrb_value self)
 }
 
 #define CALL_IF_EXIST(MRB, OBJ, NAME, ...) if( MRB_RESPOND_TO(MRB, OBJ, NAME) ){ \
-  mrb_funcall(MRB, OBJ, NAME, __VA_ARGS__); \
+  safe_funcall(MRB, OBJ, NAME, __VA_ARGS__); \
   handled = 1; }
 
 

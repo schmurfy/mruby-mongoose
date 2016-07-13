@@ -1,5 +1,6 @@
 
 #include "../gem.h"
+#include "../utils.h"
 #include "../connection.h"
 
 static struct RClass *http_message_class;
@@ -163,8 +164,7 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
         mrb_value m_req = mrb_obj_value(
             mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
           );
-        
-        mrb_funcall(st->mrb, st->m_handler, "http_request", 1, m_req);
+        safe_funcall(st->mrb, st->m_handler, "http_request", 1, m_req);
         handled = 1;
       }
     }
@@ -172,7 +172,7 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
   
   case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_handshake_done") ){
-        mrb_funcall(st->mrb, st->m_handler, "websocket_handshake_done", 0);
+        safe_funcall(st->mrb, st->m_handler, "websocket_handshake_done", 0);
       }
     }
     break;
@@ -181,7 +181,7 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_frame") ){
         struct websocket_message *wm = (struct websocket_message *) p;
         
-        mrb_funcall(st->mrb, st->m_handler, "websocket_frame", 1,
+        safe_funcall(st->mrb, st->m_handler, "websocket_frame", 1,
             mrb_str_new(st->mrb, (char *)wm->data, wm->size)
           );
       }

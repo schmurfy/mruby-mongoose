@@ -1,5 +1,6 @@
 
 #include "../gem.h"
+#include "../utils.h"
 #include "../connection.h"
 
 static struct RClass *dns_mixin;
@@ -255,7 +256,7 @@ uint8_t handle_dns_events(struct mg_connection *nc, int ev, void *p)
             mrb_data_object_alloc(st->mrb, dns_message_class, (void*)msg, &mrb_dns_message_type)
           );
         
-        mrb_funcall(st->mrb, st->m_handler, "dns_message", 1, m_msg);
+        safe_funcall(st->mrb, st->m_handler, "dns_message", 1, m_msg);
         handled = 1;
       }
     }

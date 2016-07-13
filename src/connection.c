@@ -2,6 +2,7 @@
 #include "gem.h"
 #include "manager.h"
 #include "connection.h"
+#include "utils.h"
 
 ////////////////////
 // internal state
@@ -69,11 +70,11 @@ static int instantiate_connection(mrb_state *mrb, struct mg_connection *nc)
     nc->user_data = (void *)st;
     
     if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
-      mrb_funcall(mrb, st->m_handler, "initialize", 1, listener_st->m_arg);
+      safe_funcall(mrb, st->m_handler, "initialize", 1, listener_st->m_arg);
     }
     
     if( MRB_RESPOND_TO(mrb, st->m_handler, "accepted") ){
-      mrb_funcall(mrb, st->m_handler, "accepted", 0);
+      safe_funcall(mrb, st->m_handler, "accepted", 0);
     }
   }
   
@@ -91,8 +92,9 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
   case MG_EV_TIMER:
     {
       st = (mongoose_connection_state *)nc->user_data;
+      
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "timer") ){
-        mrb_funcall(st->mrb, st->m_handler, "timer", 0);
+        safe_funcall(st->mrb, st->m_handler, "timer", 0);
         handled = 1;
       }
     }
@@ -112,7 +114,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
         mbuf_remove(io, io->len);
         
         // mrb_full_gc(st->mrb);
-        mrb_funcall(st->mrb, st->m_handler, "data_received", 1, data);
+        safe_funcall(st->mrb, st->m_handler, "data_received", 1, data);
         mrb_gc_arena_restore(st->mrb, ai);
         handled = 1;
       }
@@ -124,7 +126,7 @@ static uint8_t shared_handler(struct mg_connection *nc, int ev, void *p)
     {
       st = (mongoose_connection_state *)nc->user_data;
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "closed") ){
-        mrb_funcall(st->mrb, st->m_handler, "closed", 0);
+        safe_funcall(st->mrb, st->m_handler, "closed", 0);
         handled = 1;
       }
       
@@ -152,7 +154,7 @@ void mongoose_client_ev_handler(struct mg_connection *nc, int ev, void *p)
       // // for UDP this event is sent on the first packet received
       // instantiate_connection(st->mrb, nc);
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "connected") ){
-        mrb_funcall(st->mrb, st->m_handler, "connected", 0);
+        safe_funcall(st->mrb, st->m_handler, "connected", 0);
       }
     }
     break;
@@ -376,7 +378,7 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   
   
   if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
-    mrb_funcall(mrb, st->m_handler, "initialize", 1, m_arg);
+    safe_funcall(mrb, st->m_handler, "initialize", 1, m_arg);
   }
   
   // mrb_gc_register(mrb, ret);
