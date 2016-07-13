@@ -20,6 +20,7 @@ typedef struct {
   mrb_value                       m_arg;
   uint8_t                         protocol;
   mongoose_authentication_data    auth;
+  sock_t                          pipe;   // used for socketpair if needed
 } mongoose_connection_state;
 
 #endif // _MG_STRUCT_H
