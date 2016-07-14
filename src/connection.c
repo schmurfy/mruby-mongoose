@@ -375,7 +375,7 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   st->m_class = create_connection_class(mrb, m_module);
   
   st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, st->m_class, (void *)st, &mrb_connection_type) );
-  
+  mrb_gc_register(mrb, st->m_handler);
   
   if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
     safe_funcall(mrb, st->m_handler, "initialize", 1, m_arg);
