@@ -184,8 +184,11 @@ static mrb_value _run(mrb_state *mrb, mrb_value self)
   for(;;) {
     mg_mgr_poll(&st->mgr, timeout);
     
-    if( ! mrb_nil_p(m_block) ){
-      mrb_yield(mrb, m_block, self);
+    if( !mrb_nil_p(m_block) ){
+      if( !mrb_bool(mrb_yield(mrb, m_block, self)) ){
+        mg_mgr_free(&st->mgr);
+        break;
+      }
     }
   }
 
