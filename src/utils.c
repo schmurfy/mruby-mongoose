@@ -17,7 +17,7 @@ mrb_value safe_funcall(mrb_state *mrb, mrb_value m_obj, const char *name, mrb_in
   mrb_bool error;
   int ai = mrb_gc_arena_save(mrb);
   
-  printf("safe_funcall(%s)\n", name);
+  // printf("safe_funcall(%s)\n", name);
   
   if( mrb_respond_to(mrb, m_obj, m_name) ){
     va_list ap;
