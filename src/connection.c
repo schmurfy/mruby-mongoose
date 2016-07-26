@@ -41,6 +41,8 @@ static struct RClass *create_connection_class(mrb_state *mrb, mrb_value m_module
   // create an anonymous class
   class = mrb_class_new(mrb, mongoose_connection_class);
   
+  mrb_gc_register(mrb, mrb_obj_value(class));
+  
   // mix our module in
   mrb_include_module(mrb, class, mrb_class_ptr(m_module));
   
@@ -349,6 +351,8 @@ mrb_value mongoose_create_client_connection(mrb_state *mrb, struct mg_connection
   st->conn = nc;
   st->m_arg = m_arg;
   
+  mrb_gc_register(mrb, m_arg);
+  
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
   st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, st->m_class, (void *)st, &mrb_connection_type) );
@@ -370,6 +374,8 @@ mrb_value create_connection(mrb_state *mrb, struct mg_connection *nc, mrb_value 
   st->mrb = mrb;
   st->conn = nc;
   st->m_arg = m_arg;
+  
+  mrb_gc_register(mrb, m_arg);
   
   // create an anonymous class
   st->m_class = create_connection_class(mrb, m_module);
