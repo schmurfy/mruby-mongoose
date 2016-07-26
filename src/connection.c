@@ -358,6 +358,10 @@ mrb_value mongoose_create_client_connection(mrb_state *mrb, struct mg_connection
   st->m_handler = mrb_obj_value( mrb_data_object_alloc(mrb, st->m_class, (void *)st, &mrb_connection_type) );
   mrb_gc_register(mrb, st->m_handler);
   
+  if( MRB_RESPOND_TO(mrb, st->m_handler, "initialize") ){
+    safe_funcall(mrb, st->m_handler, "initialize", 1, m_arg);
+  }
+  
   // and associate it with the mongoose connection
   nc->user_data = (void *) st;
   
