@@ -1,7 +1,7 @@
 module HTTPHandler
   
   def timer
-    send_websocket_frame("hey #{'%x' % object_id}")
+    send_websocket_frame("hey #{format('%x', object_id)}")
     set_timer(2000)
   end
   
@@ -36,5 +36,6 @@ $manager = Mongoose::Manager.new
 
 $manager.bind('tcp://8080', HTTPHandler)
   .set_protocol_http_websocket()
+  .set_ssl("examples/https_webserver/merged.pem")
 
 $manager.run()

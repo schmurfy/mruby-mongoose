@@ -9,7 +9,7 @@ MRuby::Build.new do |conf|
   conf.gem File.expand_path(File.dirname(__FILE__)) do
     
     # for HTTPS
-    cc.include_paths << '/usr/local/Cellar/openssl/1.0.2h_1/include'
+    cc.include_paths << '/usr/local/Cellar/openssl/1.0.2n/include'
     linker.libraries += %w(crypto ssl)
     
     # add ipv6 support
@@ -37,5 +37,9 @@ MRuby::Build.new do |conf|
     
     cc.defines << "MG_DISABLE_SOCKETPAIR" # mg_broadcast
     cc.defines << "MG_DISABLE_CGI" # requires MG_DISABLE_SOCKETPAIR
+    cc.defines << "MG_DISABLE_DIRECTORY_LISTING"
+    cc.defines << "MG_DISABLE_DAV"
+    cc.defines << "MG_DISABLE_SSI"
+    cc.defines << "CS_DISABLE_STDIO"
   end
 end
