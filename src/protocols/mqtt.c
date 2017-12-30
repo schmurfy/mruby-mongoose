@@ -136,7 +136,7 @@ uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
     break;
   
   case MG_EV_MQTT_CONNACK: {
-      printf("ACK: %d\n", msg->connack_ret_code);
+      // printf("ACK: %d\n", msg->connack_ret_code);
       if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_ACCEPTED) {
         CALL_IF_EXIST(st->mrb, st->m_handler, "connected", 0);
       }
