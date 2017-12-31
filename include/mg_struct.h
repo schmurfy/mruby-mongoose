@@ -4,6 +4,7 @@
 typedef struct {
   struct mg_mgr mgr;
   mrb_value     m_obj;
+  bool          freed;
 } mongoose_manager_state;
 
 typedef struct {

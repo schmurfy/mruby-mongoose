@@ -14,7 +14,10 @@ struct RClass *mongoose_manager_class;
 static void _free_state(mrb_state *mrb, void *ptr)
 {
   mongoose_manager_state *st = (mongoose_manager_state *)ptr;
-  mg_mgr_free(&st->mgr);
+  if( st->freed == false ){
+    mg_mgr_free(&st->mgr);
+    st->freed = true;
+  }
 }
 
 static const mrb_data_type mrb_mg_type = { "$mongoose_manager", _free_state };
@@ -32,6 +35,7 @@ static mrb_value _initialize(mrb_state *mrb, mrb_value self)
   mg_mgr_init(&st->mgr, NULL);
   st->mgr.user_data = (void *)st;
   st->m_obj = self;
+  st->freed = false;
   mrb_data_init(self, st, &mrb_mg_type);
   
   return self;
@@ -216,7 +220,10 @@ static mrb_value _run(mrb_state *mrb, mrb_value self)
     
     if( !mrb_nil_p(m_block) ){
       if( !mrb_bool(mrb_yield(mrb, m_block, self)) ){
-        mg_mgr_free(&st->mgr);
+        if( st->freed == false ){
+          mg_mgr_free(&st->mgr);
+          st->freed = true;
+        }
         break;
       }
     }
