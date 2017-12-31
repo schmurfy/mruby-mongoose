@@ -48,7 +48,7 @@ static mrb_value _record_rtype(mrb_state *mrb, mrb_value self)
 ////////////////////
 // Reply class
 ///////////////////
-#ifdef MG_ENABLE_DNS_SERVER
+#if MG_ENABLE_DNS_SERVER
 
 typedef struct {
   struct mbuf         buf;
@@ -204,7 +204,7 @@ static mrb_value _send_dns_query(mrb_state *mrb, mrb_value self)
 }
 
 
-#ifdef MG_ENABLE_DNS_SERVER
+#if MG_ENABLE_DNS_SERVER
 static mrb_value _send_dns_reply(mrb_state *mrb, mrb_value self)
 {
   mrb_value m_reply;
@@ -273,7 +273,7 @@ void register_dns_protocol(mrb_state *mrb, struct RClass *connection_class, stru
 {
   dns_mod = mrb_define_module_under(mrb, mod, "DNS");
   
-#ifdef MG_ENABLE_DNS_SERVER
+#if MG_ENABLE_DNS_SERVER
   // reply class
   dns_reply_class = mrb_define_class_under(mrb, dns_mod, "Reply", NULL);
   MRB_SET_INSTANCE_TT(dns_reply_class, MRB_TT_DATA);
@@ -306,7 +306,7 @@ void register_dns_protocol(mrb_state *mrb, struct RClass *connection_class, stru
   
   mrb_define_method(mrb, dns_mixin, "send_dns_query", _send_dns_query, MRB_ARGS_REQ(2));
   
-#ifdef MG_ENABLE_DNS_SERVER
+#if MG_ENABLE_DNS_SERVER
   mrb_define_method(mrb, dns_mixin, "send_dns_reply", _send_dns_reply, MRB_ARGS_REQ(1));
 #endif
   
