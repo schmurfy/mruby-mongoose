@@ -168,9 +168,9 @@ static mrb_value _bind(mrb_state *mrb, mrb_value self)
   }
   
   if( !mrb_nil_p(m_opts) ){
+#if MG_ENABLE_SSL
     mrb_value m_val;
     
-#if MG_ENABLE_SSL
     m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "ssl_cert")), mrb_nil_value());
     if( !mrb_nil_p(m_val) ) {
       opts.ssl_cert = mrb_str_to_cstr(mrb, m_val);
