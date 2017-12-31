@@ -5,7 +5,7 @@ module HTTPHandler
     # p [:http, req.method, req.body, req.query_string]
     # p req.headers
     
-    serve_http(req, document_root: '.')
+    serve_http(req, document_root: 'examples/http')
   end
   
 end

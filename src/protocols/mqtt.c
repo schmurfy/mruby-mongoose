@@ -150,7 +150,7 @@ uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
   
   case MG_EV_MQTT_PUBLISH: {
       CALL_IF_EXIST(st->mrb, st->m_handler, "published", 2,
-          mrb_str_new_cstr(st->mrb, msg->topic),
+          mrb_str_new(st->mrb, msg->topic.p, msg->topic.len),
           mrb_str_new(st->mrb, msg->payload.p, msg->payload.len)
         );
     }

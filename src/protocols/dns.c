@@ -91,7 +91,7 @@ static mrb_value _reply_initialize(mrb_state *mrb, mrb_value self)
 
   /* reply + recursion allowed */
   msg->flags |= 0x8080;
-  mg_dns_copy_body(&reply->buf, msg);
+  mg_dns_copy_questions(&reply->buf, msg);
   msg->num_answers = 0;
   
   mrb_data_init(self, reply, &mrb_dns_reply_type);

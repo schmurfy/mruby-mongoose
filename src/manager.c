@@ -151,16 +151,46 @@ error:
 static mrb_value _bind(mrb_state *mrb, mrb_value self)
 {
   char *addr;
-  mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value();
+  struct mg_bind_opts opts;
+  mrb_value m_module = mrb_nil_value(), m_arg = mrb_nil_value(), m_opts = mrb_nil_value();
   struct mg_connection *nc;
   mongoose_manager_state *st = (mongoose_manager_state *) DATA_PTR(self);
   
-  if( mrb_get_args(mrb, "z|Co", &addr, &m_module, &m_arg) >= 2 ){
+  bzero(&opts, sizeof(opts));
+  
+  if( mrb_get_args(mrb, "z|CoH", &addr, &m_module, &m_arg, &m_opts) >= 2 ){
     // a module was provided, check it
     mrb_check_type(mrb, m_module, MRB_TT_MODULE);
   }
   
-  if( (nc = mg_bind(&st->mgr, addr, mongoose_server_ev_handler)) == NULL ){
+  if( !mrb_nil_p(m_opts) ){
+    mrb_value m_val;
+    
+#if MG_ENABLE_SSL
+    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "ssl_cert")), mrb_nil_value());
+    if( !mrb_nil_p(m_val) ) {
+      opts.ssl_cert = mrb_str_to_cstr(mrb, m_val);
+    }
+    
+    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "ssl_key")), mrb_nil_value());
+    if( !mrb_nil_p(m_val) ) {
+      opts.ssl_key = mrb_str_to_cstr(mrb, m_val);
+    }
+    
+    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "ssl_ca_cert")), mrb_nil_value());
+    if( !mrb_nil_p(m_val) ) {
+      opts.ssl_ca_cert = mrb_str_to_cstr(mrb, m_val);
+    }
+    
+    m_val = mrb_hash_fetch(mrb, m_opts, mrb_symbol_value(mrb_intern_cstr(mrb, "ssl_cipher_suites")), mrb_nil_value());
+    if( !mrb_nil_p(m_val) ) {
+      opts.ssl_cipher_suites = mrb_str_to_cstr(mrb, m_val);
+    }
+    
+#endif
+  }
+  
+  if( (nc = mg_bind_opt(&st->mgr, addr, mongoose_server_ev_handler, opts)) == NULL ){
     mrb_raisef(mrb, E_ARGUMENT_ERROR, "failed to bind on %S", mrb_str_new_cstr(mrb, addr) );
     goto error;
   }

@@ -9,6 +9,10 @@ module HTTPHandler
     serve_http(req, document_root: 'examples/websocket_server')
   end
   
+  def websocket_handshake_request
+    puts "WS request."
+  end
+  
   def websocket_handshake_done
     puts "WS connected."
     timer()
@@ -34,8 +38,12 @@ end
 
 $manager = Mongoose::Manager.new
 
-$manager.bind('tcp://8080', HTTPHandler)
+opts = {
+  ssl_cert: "examples/https_webserver/cert.pem",
+  ssl_key: "examples/https_webserver/key.pem"
+}
+
+$manager.bind('tcp://8080', HTTPHandler, nil, opts)
   .set_protocol_http_websocket()
-  .set_ssl("examples/https_webserver/merged.pem")
 
 $manager.run()

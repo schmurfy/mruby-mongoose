@@ -170,6 +170,13 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
     }
     break;
   
+  case MG_EV_WEBSOCKET_HANDSHAKE_REQUEST: {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_handshake_request") ){
+        safe_funcall(st->mrb, st->m_handler, "websocket_handshake_request", 0);
+      }
+    }
+    break;
+  
   case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_handshake_done") ){
         safe_funcall(st->mrb, st->m_handler, "websocket_handshake_done", 0);

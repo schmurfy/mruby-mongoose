@@ -10,6 +10,7 @@ MRuby::Build.new do |conf|
     
     # for HTTPS
     cc.include_paths << '/usr/local/Cellar/openssl/1.0.2n/include'
+    linker.library_paths << '/usr/local/Cellar/openssl/1.0.2n/lib'
     linker.libraries += %w(crypto ssl)
     
     # add ipv6 support

@@ -1,6 +1,8 @@
 module DNSHandler
   def dns_message(msg)
-    p msg.questions
+    msg.questions.each do |q|
+      p [q.name, q.rtype]
+    end
   end
   
   def connected()
