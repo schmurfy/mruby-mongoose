@@ -4,7 +4,7 @@ module DNSHandler
     reply = Mongoose::DNS::Reply.new(msg)
     
     msg.questions.each do |q|
-      if q.rtype == Mongoose::DNS::A_RECORD
+      if q.rtype == :A
         reply.add_record(q, rdata_ipv4: "10.2.36.4", ttl: 24)
       end
     end

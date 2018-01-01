@@ -42,7 +42,71 @@ static mrb_value _record_rtype(mrb_state *mrb, mrb_value self)
 {
   my_resource_record *r = (my_resource_record *) DATA_PTR(self);
   
-  return mrb_fixnum_value(r->record->rtype);
+  switch(r->record->rtype){
+  case MG_DNS_A_RECORD:     return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "A_NAME")); break;
+  case MG_DNS_CNAME_RECORD: return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "CNAME_NAME")); break;
+  case MG_DNS_PTR_RECORD:   return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "PTR_NAME")); break;
+  case MG_DNS_TXT_RECORD:   return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "TXT_NAME")); break;
+  case MG_DNS_AAAA_RECORD:  return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "AAAA_NAME")); break;
+  case MG_DNS_SRV_RECORD:   return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "SRV_NAME")); break;
+  case MG_DNS_MX_RECORD:    return mrb_const_get(mrb, mrb_obj_value(dns_mod), mrb_intern_cstr(mrb, "MX_NAME")); break;
+    
+  default:
+    return mrb_fixnum_value(r->record->rtype);
+  }
+}
+
+static mrb_value _record_address(mrb_state *mrb, mrb_value self)
+{
+  my_resource_record *r = (my_resource_record *) DATA_PTR(self);
+  
+  switch(r->record->rtype)
+  {
+    case MG_DNS_A_RECORD: {
+        struct in_addr sin;
+        mg_dns_parse_record_data(r->msg, r->record, &sin, 4);
+        return mrb_str_new_cstr(mrb, inet_ntoa(sin));
+      }
+      break;
+      
+#if MG_ENABLE_IPV6
+    case MG_DNS_AAAA_RECORD: {
+        char dst[INET6_ADDRSTRLEN + 1];
+        struct in6_addr sin;
+        mg_dns_parse_record_data(r->msg, r->record, &sin, 4);
+        return mrb_str_new_cstr(mrb, inet_ntop(AF_INET6, &sin, dst, INET6_ADDRSTRLEN));
+      }
+      break;
+#endif
+    
+    case MG_DNS_TXT_RECORD: {
+        return mrb_str_new(mrb, r->record->rdata.p, r->record->rdata.len);
+      }
+      break;
+      
+    case MG_DNS_CNAME_RECORD: {
+        char data[100];
+        mg_dns_parse_record_data(r->msg, r->record, data, sizeof(data));
+        return mrb_str_new_cstr(mrb, data);
+      }
+      break;
+    
+    case MG_DNS_MX_RECORD: {
+        mrb_value m_ret = mrb_ary_new_capa(mrb, 2);
+        struct mg_str str = {.p = r->record->rdata.p + 2, .len = r->record->rdata.len - 2 };
+        char data[100];
+        mg_dns_uncompress_name(r->msg, &str, data, sizeof(data) );
+        uint16_t pref = (r->record->rdata.p[0] << 8) + r->record->rdata.p[1];
+        
+        mrb_ary_set(mrb, m_ret, 0, mrb_fixnum_value(pref));
+        mrb_ary_set(mrb, m_ret, 1, mrb_str_new_cstr(mrb, data));
+        
+        return m_ret;
+      }
+      break;
+  }
+  
+  return mrb_nil_value();
 }
 
 ////////////////////
@@ -143,44 +207,53 @@ static const mrb_data_type mrb_dns_message_type = { "$mongoose_dns_message", NUL
 
 static mrb_value _msg_questions(mrb_state *mrb, mrb_value self)
 {
-  // char request[100];
   struct mg_dns_message *msg = (struct mg_dns_message *) DATA_PTR(self);
   mrb_value m_ret;
-  int i;
   int ai = mrb_gc_arena_save(mrb);
   
   m_ret = mrb_ary_new_capa(mrb, msg->num_questions);
   
-  for(i= 0; i< msg->num_questions; i++) {
-    mrb_value m_record;
-    my_resource_record *r = mrb_malloc(mrb, sizeof(my_resource_record));
+  for(int i= 0; i< msg->num_questions; i++) {
+    mrb_value m_question;
+    my_resource_record *r_question = mrb_malloc(mrb, sizeof(my_resource_record));
     
-    r->msg = msg;
-    r->record = &msg->questions[i];
+    r_question->msg = msg;
+    r_question->record = &msg->questions[i];
     
-    m_record = mrb_obj_value(
-        mrb_data_object_alloc(mrb, dns_record_class, (void*)r, &mrb_dns_record_type)
+    m_question = mrb_obj_value(
+        mrb_data_object_alloc(mrb, dns_record_class, (void*)r_question, &mrb_dns_record_type)
       );
     
-    mrb_ary_set(mrb, m_ret, i, m_record);
-    // size_t rlen;
-    // struct in_addr addr;
-    
-    
-    // if ( msg->answers[i].rtype == MG_DNS_A_RECORD ){
-    //   rlen = mg_dns_uncompress_name(msg, &msg->questions[i].name, request, sizeof(request));
-    //   
-    //   memcpy(&addr, msg->answers[i].rdata.p, 4);
-    //   
-    //   mrb_hash_set(mrb, m_questions,
-    //       mrb_str_new(mrb, request, rlen),
-    //       mrb_str_new_cstr(mrb, inet_ntoa(addr))
-    //     );
-    // }
+    mrb_ary_set(mrb, m_ret, i, m_question);
   }
   
   mrb_gc_arena_restore(mrb, ai);
+  return m_ret;
+}
+
+static mrb_value _msg_answers(mrb_state *mrb, mrb_value self)
+{
+  struct mg_dns_message *msg = (struct mg_dns_message *) DATA_PTR(self);
+  mrb_value m_ret;
+  int ai = mrb_gc_arena_save(mrb);
   
+  m_ret = mrb_ary_new_capa(mrb, msg->num_answers);
+  
+  for(int i= 0; i< msg->num_answers; i++) {
+    mrb_value m_answer;
+    my_resource_record *r_answer = mrb_malloc(mrb, sizeof(my_resource_record));
+    
+    r_answer->msg = msg;
+    r_answer->record = &msg->answers[i];
+    
+    m_answer = mrb_obj_value(
+        mrb_data_object_alloc(mrb, dns_record_class, (void*)r_answer, &mrb_dns_record_type)
+      );
+    
+    mrb_ary_set(mrb, m_ret, i, m_answer);
+  }
+  
+  mrb_gc_arena_restore(mrb, ai);
   return m_ret;
 }
 
@@ -198,7 +271,7 @@ static mrb_value _send_dns_query(mrb_state *mrb, mrb_value self)
   
   mrb_get_args(mrb, "zi", &name, &type);
   
-  mg_send_dns_query(st->conn, name, MG_DNS_A_RECORD);
+  mg_send_dns_query(st->conn, name, MG_DNS_ANY_RECORD);
   
   return self;
 }
@@ -267,7 +340,9 @@ uint8_t handle_dns_events(struct mg_connection *nc, int ev, void *p)
   return handled;
 }
 
-#define DEF_CONST(V) mrb_define_const(mrb, dns_mod, #V, mrb_fixnum_value(MG_DNS_ ## V));
+#define DEF_CONST(NAME) \
+  mrb_define_const(mrb, dns_mod, #NAME "_RECORD", mrb_fixnum_value(MG_DNS_ ## NAME ## _RECORD )); \
+  mrb_define_const(mrb, dns_mod, #NAME "_NAME", mrb_symbol_value(mrb_intern_cstr(mrb, #NAME)));
 
 void register_dns_protocol(mrb_state *mrb, struct RClass *connection_class, struct RClass *mod)
 {
@@ -288,11 +363,15 @@ void register_dns_protocol(mrb_state *mrb, struct RClass *connection_class, stru
   MRB_SET_INSTANCE_TT(dns_message_class, MRB_TT_DATA);
   
   mrb_define_method(mrb, dns_message_class, "questions", _msg_questions, MRB_ARGS_NONE());
+  mrb_define_method(mrb, dns_message_class, "answers", _msg_answers, MRB_ARGS_NONE());
   
-  DEF_CONST(A_RECORD);
-  DEF_CONST(CNAME_RECORD);
-  DEF_CONST(AAAA_RECORD);
-  DEF_CONST(MX_RECORD);
+  DEF_CONST(A);
+  DEF_CONST(CNAME);
+  DEF_CONST(PTR);
+  DEF_CONST(TXT);
+  DEF_CONST(AAAA);
+  DEF_CONST(SRV);
+  DEF_CONST(MX);
   
   // record class
   dns_record_class = mrb_define_class_under(mrb, dns_mod, "Record", NULL);
@@ -300,6 +379,7 @@ void register_dns_protocol(mrb_state *mrb, struct RClass *connection_class, stru
   
   mrb_define_method(mrb, dns_record_class, "name", _record_name, MRB_ARGS_NONE());
   mrb_define_method(mrb, dns_record_class, "rtype", _record_rtype, MRB_ARGS_NONE());
+  mrb_define_method(mrb, dns_record_class, "address", _record_address, MRB_ARGS_NONE());
   
   // Connection Mixin
   dns_mixin = mrb_define_module_under(mrb, dns_mod, "ConnectionMixin");

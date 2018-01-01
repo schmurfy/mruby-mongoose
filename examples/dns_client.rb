@@ -1,7 +1,13 @@
 module DNSHandler
   def dns_message(msg)
+    puts "Questions: "
     msg.questions.each do |q|
-      p [q.name, q.rtype]
+      p [q.name]
+    end
+    
+    puts "\nAnswers: "
+    msg.answers.each do |v|
+      puts "[#{v.rtype}] #{v.name} => #{v.address}"
     end
   end
   

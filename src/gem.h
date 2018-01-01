@@ -8,6 +8,7 @@
 #include "mruby/array.h"
 #include "mruby/string.h"
 #include "mruby/error.h"
+#include "mruby/variable.h"
 
 #include "mongoose.h"
 
