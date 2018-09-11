@@ -3,7 +3,7 @@ MRUBY_CONFIG = File.expand_path('../build_config.rb', __FILE__)
 
 file :mruby do
   # sh "git clone --depth=1 git://github.com/mruby/mruby.git"
-  sh "git clone -b 1.3.0 --depth=1 git://github.com/mruby/mruby.git"
+  sh "git clone -b 1.4.1 --depth=1 git://github.com/mruby/mruby.git"
 end
 
 desc "Update mongoose from github"
