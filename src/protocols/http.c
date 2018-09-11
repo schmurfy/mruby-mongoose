@@ -170,6 +170,30 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
     }
     break;
   
+  case MG_EV_HTTP_REPLY:
+    {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "http_reply") ){
+        mrb_value m_req = mrb_obj_value(
+            mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
+          );
+        safe_funcall(st->mrb, st->m_handler, "http_reply", 1, m_req);
+        handled = 1;
+      }
+    }
+    break;
+  
+  case MG_EV_HTTP_CHUNK:
+    {
+      if( MRB_RESPOND_TO(st->mrb, st->m_handler, "http_chunk") ){
+        mrb_value m_req = mrb_obj_value(
+            mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
+          );
+        safe_funcall(st->mrb, st->m_handler, "http_chunk", 1, m_req);
+        handled = 1;
+      }
+    }
+    break;
+  
   case MG_EV_WEBSOCKET_HANDSHAKE_REQUEST: {
       if( MRB_RESPOND_TO(st->mrb, st->m_handler, "websocket_handshake_request") ){
         safe_funcall(st->mrb, st->m_handler, "websocket_handshake_request", 0);
