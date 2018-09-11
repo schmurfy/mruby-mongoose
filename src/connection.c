@@ -195,9 +195,9 @@ void mongoose_server_ev_handler(struct mg_connection *nc, int ev, void *p)
   // pass the event along if not handled
   (handled ||
     shared_handler(nc, ev, p) ||
-    handle_mqtt_server_events(nc, ev, p) ||
     handle_dns_events(nc, ev, p) ||
-    handle_http_events(nc, ev, p) 
+    handle_http_events(nc, ev, p) ||
+    handle_mqtt_server_events(nc, ev, p)
   );
 }
 
