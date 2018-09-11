@@ -166,6 +166,7 @@ void mongoose_client_ev_handler(struct mg_connection *nc, int ev, void *p)
   (handled ||
     shared_handler(nc, ev, p) ||
     handle_mqtt_client_events(nc, ev, p) ||
+    handle_http_events(nc, ev, p) ||
     handle_dns_events(nc, ev, p)
   );
   
