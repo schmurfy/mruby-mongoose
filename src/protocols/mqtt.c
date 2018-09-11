@@ -8,6 +8,14 @@ static struct RClass *mqtt_mixin;
 static mrb_value _set_protocol_mqtt(mrb_state *mrb, mrb_value self)
 {
   mongoose_connection_state *st = (mongoose_connection_state *) DATA_PTR(self);
+  
+#if MG_ENABLE_MQTT_BROKER
+  if( st->conn->flags & MG_F_LISTENING ) {
+    st->broker = mrb_malloc(mrb, sizeof(struct mg_mqtt_broker));;
+    mg_mqtt_broker_init(st->broker, NULL);
+  }
+#endif
+  
   mg_set_protocol_mqtt(st->conn);
   st->protocol = PROTO_TYPE_MQTT;
   
@@ -112,7 +120,18 @@ static mrb_value _publish(mrb_state *mrb, mrb_value self)
 // public
 ///////////////////
 
-uint8_t handle_mqtt_events(struct mg_connection *nc, int ev, void *p)
+uint8_t handle_mqtt_server_events(struct mg_connection *nc, int ev, void *p)
+{
+#if MG_ENABLE_MQTT_BROKER
+  mg_mqtt_broker(nc, ev, p);
+  return 1;
+#else
+  return 0;
+#endif
+}
+
+
+uint8_t handle_mqtt_client_events(struct mg_connection *nc, int ev, void *p)
 {
   uint8_t handled = 0;
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;

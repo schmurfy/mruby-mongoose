@@ -22,6 +22,10 @@ typedef struct {
   uint8_t                         protocol;
   mongoose_authentication_data    auth;
   sock_t                          pipe;   // used for socketpair if needed
+  
+#if MG_ENABLE_MQTT_BROKER
+  struct mg_mqtt_broker           *broker;
+#endif
 } mongoose_connection_state;
 
 #endif // _MG_STRUCT_H

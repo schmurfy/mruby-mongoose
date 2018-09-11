@@ -24,6 +24,7 @@ MRuby::Build.new do |conf|
     # cc.defines << "MG_ENABLE_MQTT_BROKER"
     cc.defines << "MG_ENABLE_DNS_SERVER"
     cc.defines << "MG_ENABLE_SSL"
+    cc.defines << "MG_ENABLE_MQTT_BROKER"
     # cc.defines << "MG_ENABLE_COAP"
     # cc.defines << "MG_ENABLE_GETADDRINFO"
     
