@@ -188,7 +188,10 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
         mrb_value m_req = mrb_obj_value(
             mrb_data_object_alloc(st->mrb, http_message_class, (void*)req, &mrb_http_message_type)
           );
-        safe_funcall(st->mrb, st->m_handler, "http_chunk", 1, m_req);
+        mrb_value ret = safe_funcall(st->mrb, st->m_handler, "http_chunk", 1, m_req);
+        if( mrb_bool(ret) ){ // if handler returns true, remove the chunk
+          nc->flags |= MG_F_DELETE_CHUNK;
+        }
         handled = 1;
       }
     }
