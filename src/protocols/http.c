@@ -178,6 +178,12 @@ uint8_t handle_http_events(struct mg_connection *nc, int ev, void *p)
           );
         safe_funcall(st->mrb, st->m_handler, "http_reply", 1, m_req);
         handled = 1;
+        
+        if( nc->proto_data != NULL ){
+          nc->proto_data_destructor(nc->proto_data);
+          nc->proto_data = NULL;
+        }
+        
       }
     }
     break;
